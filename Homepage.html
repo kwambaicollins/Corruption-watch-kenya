@@ -119,6 +119,16 @@
                 background: #004d32;
             }
             
+            .btn-outline {
+                background: transparent;
+                border: 1px solid white;
+                margin-left: 10px;
+            }
+            
+            .btn-outline:hover {
+                background: rgba(255,255,255,0.1);
+            }
+            
             .features {
                 padding: 3rem 2rem;
                 text-align: center;
@@ -144,14 +154,13 @@
     <body>
         <header>
             <div class="logo">
-
                 <span>Corruption Watch Kenya</span>
             </div>
             <button class="nav-toggle" aria-label="toggle navigation" id="navToggle">
                 <i class="fas fa-bars"></i>
             </button>
             <div class="nav-popup" id="navPopup">
-                <a href="dashboard.html" class="nav__link"> <!-- Add class here -->
+                <a href="dashboard.html">
                     <i class="fas fa-chart-pie"></i>
                     Dashboard
                 </a>
@@ -161,7 +170,7 @@
         <section class="hero">
             <h1>Fight Corruption in Kenya</h1>
             <p>Report corruption cases anonymously and safely through our secure platform</p>
-            <a href="C:/Users/ADMIN/OneDrive/Desktop/CORRUPTION WATCH/Reportpage.html" class="btn">Report Now</a>
+            <a href="report.html" class="btn">Report Now</a>
             <a href="#learn" class="btn btn-outline">Learn More</a>
         </section>
         
@@ -196,19 +205,21 @@
         
         <script>
             // Navigation toggle functionality
-            document.getElementById('navToggle').addEventListener('click', function() {
+            document.getElementById('navToggle').addEventListener('click', function(e) {
+                e.stopPropagation(); // Prevent event from bubbling to document
                 const popup = document.getElementById('navPopup');
                 popup.classList.toggle('show');
             });
 
             // Close the popup when clicking outside
-            document.addEventListener('click', function(event) {
+            document.addEventListener('click', function() {
                 const popup = document.getElementById('navPopup');
-                const toggle = document.getElementById('navToggle');
-                
-                if (!popup.contains(event.target) && !toggle.contains(event.target)) {
-                    popup.classList.remove('show');
-                }
+                popup.classList.remove('show');
+            });
+
+            // Prevent popup from closing when clicking inside it
+            document.getElementById('navPopup').addEventListener('click', function(e) {
+                e.stopPropagation();
             });
         </script>
     </body>
