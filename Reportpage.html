@@ -10,8 +10,8 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
     <style>
         :root {
-            --primary-color: #006341; /* Kenyan green */
-            --secondary-color: #BB0000; /* For alerts/important items */
+            --primary-color: #006341;
+            --secondary-color: #BB0000;
             --light-color: #f4f4f4;
             --dark-color: #333;
         }
@@ -47,55 +47,6 @@
         
         .logo img {
             height: 50px;
-        }
-        
-        .nav-toggle {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 0.5rem;
-        }
-        
-        /* Navigation Popup */
-        .nav-popup {
-            position: absolute;
-            top: 100%;
-            right: 2rem;
-            background: white;
-            border-radius: 5px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            width: 200px;
-            overflow: hidden;
-            transform: scale(0);
-            transform-origin: top right;
-            transition: transform 0.2s ease;
-            z-index: 101;
-        }
-        
-        .nav-popup.active {
-            transform: scale(1);
-        }
-        
-        .nav-popup a {
-            display: block;
-            padding: 1rem;
-            color: var(--dark-color);
-            text-decoration: none;
-            transition: all 0.3s ease;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .nav-popup a:hover {
-            background: var(--light-color);
-            color: var(--primary-color);
-        }
-        
-        .nav-popup a i {
-            margin-right: 10px;
-            width: 20px;
-            text-align: center;
         }
         
         .report-container {
@@ -134,11 +85,6 @@
             border-radius: 4px;
             font-family: inherit;
             font-size: 1rem;
-        }
-        
-        .form-control:focus {
-            outline: none;
-            border-color: var(--primary-color);
         }
         
         textarea.form-control {
@@ -214,10 +160,6 @@
             font-size: 1.1rem;
         }
         
-        .btn:hover {
-            background: #004d32;
-        }
-        
         .map-container {
             height: 300px;
             background: #eee;
@@ -239,45 +181,6 @@
             margin-top: 2rem;
         }
         
-        /* Overlay when menu is open */
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 99;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-        
-        .overlay.active {
-            opacity: 1;
-            pointer-events: all;
-        }
-        
-        /* Database and Analysis Links */
-        .system-links {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 2rem;
-            padding-top: 1rem;
-            border-top: 1px solid #eee;
-        }
-        
-        .system-links a {
-            color: var(--primary-color);
-            text-decoration: none;
-            font-weight: 600;
-        }
-        
-        .system-links a:hover {
-            text-decoration: underline;
-        }
-        
-        /* Map marker style */
         .map-marker {
             background-color: var(--secondary-color);
             width: 20px;
@@ -288,11 +191,9 @@
     </style>
 </head>
 <body>
-    <div class="overlay" id="overlay"></div>
-    
     <header>
         <div class="logo">
-            <img src="logo.png">
+            <img src="logo.png" alt="Corruption Watch Kenya Logo">
             <span>Corruption Watch Kenya</span>
         </div>
     </header>
@@ -300,7 +201,7 @@
     <div class="report-container">
         <div class="report-form">
             <h2 class="form-title">Report Corruption Case</h2>
-            <form id="corruptionReportForm" action="/submit-report" method="POST" enctype="multipart/form-data">
+            <form id="corruptionReportForm">
                 <div class="form-group">
                     <label for="corruptionType">Type of Corruption</label>
                     <div class="select-wrapper">
@@ -320,7 +221,7 @@
                 
                 <div class="form-group">
                     <label for="description">Description</label>
-                    <textarea class="form-control" id="description" name="description" placeholder="Provide detailed information about the corruption incident and the individuals involved..." required></textarea>
+                    <textarea class="form-control" id="description" name="description" required></textarea>
                 </div>
                 
                 <div class="form-group">
@@ -328,7 +229,7 @@
                     <div class="map-container">
                         <div id="map"></div>
                     </div>
-                    <input type="text" class="form-control" id="location" name="location" placeholder="Location details will appear here when you click on the map" required>
+                    <input type="text" class="form-control" id="location" name="location" required>
                     <input type="hidden" id="latitude" name="latitude">
                     <input type="hidden" id="longitude" name="longitude">
                 </div>
@@ -338,20 +239,19 @@
                     <div class="file-upload" id="fileUploadArea">
                         <i class="fas fa-cloud-upload-alt"></i>
                         <p>Drag and drop files here or click to browse</p>
-                        <input type="file" id="evidenceFiles" name="evidenceFiles" multiple accept="image/*,video/*,.pdf,.doc,.docx">
+                        <input type="file" id="evidenceFiles" name="evidenceFiles" multiple>
                         <div class="file-info" id="fileInfo">No files selected</div>
                     </div>
-                    <small>Accepted formats: JPG, PNG, PDF, DOC, MP4 (Max 10MB each)</small>
                 </div>
                 
                 <div class="form-group">
-                    <label for="dateOccurred">Date Occurred (Approximate)</label>
+                    <label for="dateOccurred">Date Occurred</label>
                     <input type="date" class="form-control" id="dateOccurred" name="dateOccurred">
                 </div>
                 
                 <div class="form-group">
-                    <label for="involvedParties">Involved Parties (if known)</label>
-                    <input type="text" class="form-control" id="involvedParties" name="involvedParties" placeholder="Names, positions, or organizations involved">
+                    <label for="involvedParties">Involved Parties</label>
+                    <input type="text" class="form-control" id="involvedParties" name="involvedParties">
                 </div>
                 
                 <button type="submit" class="btn btn-block">
@@ -366,250 +266,78 @@
         <p>In partnership with EACC and other anti-corruption agencies</p>
     </footer>
 
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-    
     <script>
-        // Navigation toggle functionality
-        const navToggle = document.getElementById('navToggle');
-        const navPopup = document.getElementById('navPopup');
-        const overlay = document.getElementById('overlay');
-        
-        if (navToggle && navPopup) {
-            navToggle.addEventListener('click', () => {
-                navPopup.classList.toggle('active');
-                overlay.classList.toggle('active');
-            });
-        }
-        
-        // Close menu when clicking on overlay
-        overlay.addEventListener('click', () => {
-            if (navPopup) navPopup.classList.remove('active');
-            overlay.classList.remove('active');
-        });
-        
-        // File upload functionality
+        // File Upload Handling
         const fileUploadArea = document.getElementById('fileUploadArea');
         const evidenceFiles = document.getElementById('evidenceFiles');
         const fileInfo = document.getElementById('fileInfo');
         
-        fileUploadArea.addEventListener('click', () => {
-            evidenceFiles.click();
-        });
+        fileUploadArea.addEventListener('click', () => evidenceFiles.click());
         
-        evidenceFiles.addEventListener('change', () => {
-            if (evidenceFiles.files.length > 0) {
-                const fileNames = [];
-                for (let i = 0; i < evidenceFiles.files.length; i++) {
-                    fileNames.push(evidenceFiles.files[i].name);
-                }
-                fileInfo.textContent = `${evidenceFiles.files.length} file(s) selected: ${fileNames.join(', ')}`;
-            } else {
-                fileInfo.textContent = 'No files selected';
-            }
-        });
+        evidenceFiles.addEventListener('change', updateFileInfo);
         
-        // Drag and drop functionality
         fileUploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
             fileUploadArea.style.borderColor = 'var(--primary-color)';
-            fileUploadArea.style.backgroundColor = 'rgba(0, 99, 65, 0.1)';
         });
         
         fileUploadArea.addEventListener('dragleave', () => {
             fileUploadArea.style.borderColor = '#ddd';
-            fileUploadArea.style.backgroundColor = 'transparent';
         });
         
         fileUploadArea.addEventListener('drop', (e) => {
             e.preventDefault();
             fileUploadArea.style.borderColor = '#ddd';
-            fileUploadArea.style.backgroundColor = 'transparent';
-            
-            if (e.dataTransfer.files.length > 0) {
-                evidenceFiles.files = e.dataTransfer.files;
-                const fileNames = [];
-                for (let i = 0; i < evidenceFiles.files.length; i++) {
-                    fileNames.push(evidenceFiles.files[i].name);
-                }
-                fileInfo.textContent = `${evidenceFiles.files.length} file(s) selected: ${fileNames.join(', ')}`;
-            }
+            evidenceFiles.files = e.dataTransfer.files;
+            updateFileInfo();
         });
         
-        // Form submission
+        function updateFileInfo() {
+            if (evidenceFiles.files.length > 0) {
+                fileInfo.textContent = `${evidenceFiles.files.length} file(s) selected`;
+            } else {
+                fileInfo.textContent = 'No files selected';
+            }
+        }
+        
+        // Form Submission
         document.getElementById('corruptionReportForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            // Here you would normally send the data to your backend
-            alert('Report submitted successfully! Your reference number is CWK-' + Math.floor(Math.random() * 1000000));
+            alert('Report submitted successfully!');
             this.reset();
             fileInfo.textContent = 'No files selected';
-            
-            // Redirect to Home.html after submission
-            setTimeout(() => {
-                window.location.href = 'Home.html';
-            }, 1500);
+            setTimeout(() => window.location.href = 'Home.html', 1500);
         });
-
-        // Efficient map implementation
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize the map only when the container is in view
-            const mapContainer = document.getElementById('map');
-            if (mapContainer) {
-                // Use requestIdleCallback to defer non-critical map initialization
-                if ('requestIdleCallback' in window) {
-                    window.requestIdleCallback(initMap, { timeout: 1000 });
-                } else {
-                    setTimeout(initMap, 500);
-                }
-            }
-        });
-
+        
+        // Map Initialization
+        document.addEventListener('DOMContentLoaded', initMap);
+        
         function initMap() {
-            // Initialize the map centered on Kenya with more efficient settings
-            const map = L.map('map', {
-                center: [0.0236, 37.9062],
-                zoom: 6,
-                zoomControl: false, // We'll add our own positioned control
-                preferCanvas: true, // Better performance for markers
-                fadeAnimation: false, // Disable animations for better performance
-                tap: false // Prevent issues with fast clicks
-            });
-
-            // Add efficient tile layer with retina detection
-            const isRetina = window.devicePixelRatio > 1;
-            const tileUrl = isRetina 
-                ? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}@2x.png' 
-                : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+            const map = L.map('map').setView([0.0236, 37.9062], 6);
             
-            L.tileLayer(tileUrl, {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                maxZoom: 18,
-                minZoom: 5,
-                reuseTiles: true,
-                updateWhenIdle: true // Only update when panning stops
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
-
-            // Add custom zoom control positioned at bottom right
-            L.control.zoom({
-                position: 'bottomright'
-            }).addTo(map);
-
-            // Create a more efficient marker
+            
             const marker = L.marker([0.0236, 37.9062], {
-                draggable: true,
-                autoPan: true,
-                icon: L.divIcon({
-                    className: 'map-marker',
-                    iconSize: [24, 24]
-                })
+                draggable: true
             }).addTo(map);
-
-            // Throttled function to update location details
-            const updateLocationDetails = throttle((lat, lng) => {
-                // Update hidden fields immediately
-                document.getElementById('latitude').value = lat;
-                document.getElementById('longitude').value = lng;
-                
-                // Show coordinates while we fetch details
-                document.getElementById('location').value = `Latitude: ${lat.toFixed(4)}, Longitude: ${lng.toFixed(4)}`;
-                
-                // Only fetch detailed address if user hasn't moved for 500ms
-                setTimeout(() => {
-                    if (marker.getLatLng().lat === lat && marker.getLatLng().lng === lng) {
-                        fetchLocationDetails(lat, lng);
-                    }
-                }, 500);
-            }, 200);
-
-            // Function to fetch location details with caching
-            const locationCache = {};
-            function fetchLocationDetails(lat, lng) {
-                const cacheKey = `${lat.toFixed(4)},${lng.toFixed(4)}`;
-                
-                // Check cache first
-                if (locationCache[cacheKey]) {
-                    updateLocationText(locationCache[cacheKey]);
-                    return;
-                }
-                
-                // Fetch from Nominatim with proper headers and caching
-                fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`, {
-                    headers: {
-                        'Accept': 'application/json'
-                    },
-                    cache: 'force-cache'
-                })
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
-                })
-                .then(data => {
-                    locationCache[cacheKey] = data;
-                    updateLocationText(data);
-                })
-                .catch(error => {
-                    console.error('Error fetching location details:', error);
-                    // Keep the coordinate display if there's an error
-                });
-            }
-
-            function updateLocationText(data) {
-                if (!data.address) return;
-                
-                let locationText = '';
-                
-                // Build location string from most specific to least specific
-                if (data.address.road) locationText += `${data.address.road}, `;
-                if (data.address.suburb) locationText += `${data.address.suburb}, `;
-                if (data.address.city) locationText += `${data.address.city}, `;
-                if (data.address.county) locationText += `${data.address.county}, `;
-                if (data.address.state) locationText += `${data.address.state}, `;
-                if (data.address.country) locationText += `${data.address.country}`;
-                
-                // Clean up trailing commas
-                locationText = locationText.replace(/, $/, '');
-                
-                if (locationText) {
-                    document.getElementById('location').value = locationText;
-                }
-            }
-
-            // Update location when marker is dragged
-            marker.on('dragend', function(e) {
-                const newLatLng = marker.getLatLng();
-                updateLocationDetails(newLatLng.lat, newLatLng.lng);
-            });
-
-            // Update location when map is clicked
-            map.on('click', function(e) {
+            
+            marker.on('dragend', updateLocation);
+            map.on('click', (e) => {
                 marker.setLatLng(e.latlng);
-                updateLocationDetails(e.latlng.lat, e.latlng.lng);
+                updateLocation();
             });
-
-            // Initialize with default location (Nairobi)
-            updateLocationDetails(-1.286389, 36.817223);
-        }
-
-        // Simple throttle function to limit how often a function can be called
-        function throttle(func, limit) {
-            let lastFunc;
-            let lastRan;
-            return function() {
-                const context = this;
-                const args = arguments;
-                if (!lastRan) {
-                    func.apply(context, args);
-                    lastRan = Date.now();
-                } else {
-                    clearTimeout(lastFunc);
-                    lastFunc = setTimeout(function() {
-                        if ((Date.now() - lastRan) >= limit) {
-                            func.apply(context, args);
-                            lastRan = Date.now();
-                        }
-                    }, limit - (Date.now() - lastRan));
-                }
-            };
+            
+            function updateLocation() {
+                const latLng = marker.getLatLng();
+                document.getElementById('latitude').value = latLng.lat;
+                document.getElementById('longitude').value = latLng.lng;
+                document.getElementById('location').value = `Lat: ${latLng.lat.toFixed(4)}, Lng: ${latLng.lng.toFixed(4)}`;
+            }
+            
+            updateLocation();
         }
     </script>
 </body>
