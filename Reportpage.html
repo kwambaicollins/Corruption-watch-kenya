@@ -351,11 +351,12 @@
                 });
         }
         
-       // Updated Form Submission with Better Error Handling
+       // Updated Form Submission with Proper Response Handling
     document.getElementById('corruptionReportForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
 
@@ -368,37 +369,43 @@
         }
         
         try {
-            const response = await fetch('/api/report', {
+            const response = await fetch('https://corruptionwatch-kenya.vercel.app/api/report', {
                 method: 'POST',
-                body: formData,
-                // headers: { 'Content-Type': 'multipart/form-data' } // Don't set this manually!
+                body: formData
             });
+
+            // Clone the response to read it multiple times if needed
+            const responseClone = response.clone();
             
-            let result;
+            // First try to parse as JSON
             try {
-                result = await response.json();
+                const result = await responseClone.json();
+                if (!response.ok) {
+                    throw new Error(result.error || result.message || `Server error: ${response.status}`);
+                }
+                alert(`Report submitted successfully! Your reference number is ${result.referenceId}`);
+                this.reset();
+                fileInfo.textContent = 'No files selected';
+                marker.setLatLng([0.0236, 37.9062]);
+                map.setView([0.0236, 37.9062], 6);
+                return;
             } catch (jsonError) {
-                console.error('JSON parse error:', jsonError);
-                const text = await response.text();
-                throw new Error(`Server returned: ${text.substring(0, 100)}...`);
+                console.log('Not JSON response, trying text');
             }
 
+            // If not JSON, read as text
+            const text = await response.text();
             if (!response.ok) {
-                throw new Error(result.error || result.message || 'Submission failed');
+                throw new Error(text || `Request failed with status ${response.status}`);
             }
-
-            alert(`Report submitted successfully! Your reference number is ${result.referenceId}`);
-            this.reset();
-            fileInfo.textContent = 'No files selected';
-            marker.setLatLng([0.0236, 37.9062]); // Reset map position
-            map.setView([0.0236, 37.9062], 6);
+            alert(`Success! Server response: ${text.substring(0, 100)}`);
             
         } catch (err) {
             console.error('Submission error:', err);
-            alert(`Error: ${err.message}\n\nPlease try again or contact support.`);
+            alert(`Error: ${err.message}\n\nPlease try again or contact support@corruptionwatchkenya.org`);
         } finally {
             submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Report Anonymously';
+            submitBtn.innerHTML = originalBtnText;
         }
     });
 
