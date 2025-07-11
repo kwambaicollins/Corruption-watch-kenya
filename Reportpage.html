@@ -351,13 +351,37 @@
                 });
         }
         
-        // Form Submission
-        document.getElementById('corruptionReportForm').addEventListener('submit', function(e) {
+        // Updated Form Submission
+        document.getElementById('corruptionReportForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            alert('Report submitted successfully! Your reference number is CWK-' + Math.floor(Math.random() * 1000000));
-            this.reset();
-            fileInfo.textContent = 'No files selected';
-            setTimeout(() => window.location.href = 'Home.html', 1500);
+            
+            const formData = new FormData(this);
+            const files = document.getElementById('evidenceFiles').files;
+            
+            // Append files to FormData
+            for (let i = 0; i < files.length; i++) {
+                formData.append('evidenceFiles', files[i]);
+            }
+            
+            try {
+                const response = await fetch('/api/report', {
+                    method: 'POST',
+                    body: formData,
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`Report submitted successfully! Your reference number is ${result.referenceId}`);
+                    this.reset();
+                    fileInfo.textContent = 'No files selected';
+                } else {
+                    throw new Error(result.error || 'Failed to submit report');
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error submitting report: ' + err.message);
+            }
         });
         
         // Initialize Map when DOM is loaded
