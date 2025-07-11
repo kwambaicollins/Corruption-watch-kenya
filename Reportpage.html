@@ -6,7 +6,7 @@
     <title>Report Corruption - Corruption Watch Kenya</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
     <style>
         :root {
@@ -33,6 +33,8 @@
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 100;
         }
         
         .logo {
@@ -128,6 +130,10 @@
             margin-bottom: 1rem;
         }
         
+        .file-upload input[type="file"] {
+            display: none;
+        }
+        
         .file-info {
             margin-top: 1rem;
             font-size: 0.9rem;
@@ -135,20 +141,23 @@
         }
         
         .btn {
-            display: block;
-            width: 100%;
+            display: inline-block;
             background: var(--primary-color);
             color: white;
-            padding: 1rem;
+            padding: 0.8rem 1.5rem;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 1.1rem;
-            transition: background 0.3s ease;
+            text-decoration: none;
+            font-size: 1rem;
+            transition: all 0.3s ease;
         }
         
-        .btn:hover {
-            background: #004d32;
+        .btn-block {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.1rem;
         }
         
         .map-container {
@@ -159,12 +168,25 @@
             overflow: hidden;
         }
         
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        
         footer {
             background: var(--dark-color);
             color: white;
             text-align: center;
             padding: 2rem;
             margin-top: 2rem;
+        }
+        
+        .map-marker {
+            background-color: var(--secondary-color);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid white;
         }
     </style>
 </head>
@@ -199,7 +221,7 @@
                 
                 <div class="form-group">
                     <label for="description">Description</label>
-                    <textarea class="form-control" id="description" name="description" placeholder="Provide detailed information about the incident..." required></textarea>
+                    <textarea class="form-control" id="description" name="description" required></textarea>
                 </div>
                 
                 <div class="form-group">
@@ -207,7 +229,7 @@
                     <div class="map-container">
                         <div id="map"></div>
                     </div>
-                    <input type="text" class="form-control" id="location" name="location" placeholder="Location will update when you click the map" required>
+                    <input type="text" class="form-control" id="location" name="location" required>
                     <input type="hidden" id="latitude" name="latitude">
                     <input type="hidden" id="longitude" name="longitude">
                 </div>
@@ -216,11 +238,10 @@
                     <label>Evidence Upload</label>
                     <div class="file-upload" id="fileUploadArea">
                         <i class="fas fa-cloud-upload-alt"></i>
-                        <p>Click to upload files or drag and drop</p>
-                        <input type="file" id="evidenceFiles" name="evidenceFiles" multiple style="display: none;">
+                        <p>Drag and drop files here or click to browse</p>
+                        <input type="file" id="evidenceFiles" name="evidenceFiles" multiple>
                         <div class="file-info" id="fileInfo">No files selected</div>
                     </div>
-                    <small>Max file size: 10MB each</small>
                 </div>
                 
                 <div class="form-group">
@@ -229,11 +250,11 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="involvedParties">Involved Parties (if known)</label>
-                    <input type="text" class="form-control" id="involvedParties" name="involvedParties" placeholder="Names, positions, or organizations">
+                    <label for="involvedParties">Involved Parties</label>
+                    <input type="text" class="form-control" id="involvedParties" name="involvedParties">
                 </div>
                 
-                <button type="submit" class="btn">
+                <button type="submit" class="btn btn-block">
                     <i class="fas fa-paper-plane"></i> Submit Report Anonymously
                 </button>
             </form>
@@ -254,15 +275,8 @@
         
         fileUploadArea.addEventListener('click', () => evidenceFiles.click());
         
-        evidenceFiles.addEventListener('change', () => {
-            if (evidenceFiles.files.length > 0) {
-                fileInfo.textContent = `${evidenceFiles.files.length} file(s) selected`;
-            } else {
-                fileInfo.textContent = 'No files selected';
-            }
-        });
+        evidenceFiles.addEventListener('change', updateFileInfo);
         
-        // Drag and Drop Handling
         fileUploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
             fileUploadArea.style.borderColor = 'var(--primary-color)';
@@ -276,44 +290,78 @@
             e.preventDefault();
             fileUploadArea.style.borderColor = '#ddd';
             evidenceFiles.files = e.dataTransfer.files;
-            fileInfo.textContent = `${evidenceFiles.files.length} file(s) selected`;
+            updateFileInfo();
         });
+        
+        function updateFileInfo() {
+            if (evidenceFiles.files.length > 0) {
+                fileInfo.textContent = `${evidenceFiles.files.length} file(s) selected`;
+            } else {
+                fileInfo.textContent = 'No files selected';
+            }
+        }
+        
+        // Map Implementation
+        let map, marker;
+        
+        function initMap() {
+            map = L.map('map', {
+                center: [0.0236, 37.9062],
+                zoom: 6,
+                preferCanvas: true
+            });
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+            
+            marker = L.marker([0.0236, 37.9062], {
+                draggable: true,
+                icon: L.divIcon({ className: 'map-marker', iconSize: [24, 24] })
+            }).addTo(map);
+            
+            marker.on('dragend', updateLocation);
+            map.on('click', (e) => {
+                marker.setLatLng(e.latlng);
+                updateLocation();
+            });
+            
+            updateLocation();
+        }
+        
+        function updateLocation() {
+            const { lat, lng } = marker.getLatLng();
+            document.getElementById('latitude').value = lat;
+            document.getElementById('longitude').value = lng;
+            document.getElementById('location').value = `Latitude: ${lat.toFixed(4)}, Longitude: ${lng.toFixed(4)}`;
+            
+            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.address) {
+                        const addressParts = [
+                            data.address.road,
+                            data.address.suburb,
+                            data.address.city,
+                            data.address.county,
+                            data.address.country
+                        ].filter(Boolean);
+                        document.getElementById('location').value = addressParts.join(', ');
+                    }
+                });
+        }
         
         // Form Submission
         document.getElementById('corruptionReportForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            alert('Report submitted successfully!');
+            alert('Report submitted successfully! Your reference number is CWK-' + Math.floor(Math.random() * 1000000));
             this.reset();
             fileInfo.textContent = 'No files selected';
-            setTimeout(() => {
-                window.location.href = 'Home.html';
-            }, 1500);
+            setTimeout(() => window.location.href = 'Home.html', 1500);
         });
         
-        // Map Initialization
-        const map = L.map('map').setView([-1.286389, 36.817223], 6);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
-        
-        const marker = L.marker([-1.286389, 36.817223], {
-            draggable: true
-        }).addTo(map);
-        
-        function updateLocation() {
-            const latLng = marker.getLatLng();
-            document.getElementById('latitude').value = latLng.lat;
-            document.getElementById('longitude').value = latLng.lng;
-            document.getElementById('location').value = `Lat: ${latLng.lat.toFixed(4)}, Lng: ${latLng.lng.toFixed(4)}`;
-        }
-        
-        marker.on('dragend', updateLocation);
-        map.on('click', function(e) {
-            marker.setLatLng(e.latlng);
-            updateLocation();
-        });
-        
-        updateLocation();
+        // Initialize Map when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initMap);
     </script>
 </body>
 </html>
