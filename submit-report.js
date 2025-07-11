@@ -1,26 +1,33 @@
+import { MongoClient } from 'mongodb';
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
-const uri = "mongodb+srv://CWK:<db_password>@cluster0.p7zjysz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const uri = "mongodb+srv://CWK:<db_password>@cluster0.p7zjysz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"; // Replace with your Atlas connection string
+const client = new MongoClient(uri);
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
-const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
-});
 
-async function run() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
+    const { details, category, anonymous } = req.body;
+    
     await client.connect();
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    const db = client.db("corruption_reports"); // Create a new DB
+    const collection = db.collection("reports"); // Create a collection
+    
+    // Insert the report
+    await collection.insertOne({
+      details,
+      category,
+      anonymous,
+      createdAt: new Date()
+    });
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to submit report' });
   } finally {
-    // Ensures that the client will close when you finish/error
     await client.close();
   }
 }
-run().catch(console.dir);
