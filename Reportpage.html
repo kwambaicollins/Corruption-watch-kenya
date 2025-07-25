@@ -1,437 +1,461 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Corruption Watch Kenya - Report Corruption Anonymously</title>
-        <meta name="description" content="Secure platform for anonymous reporting of corruption cases in Kenya.">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
-        <style>
-            :root {
-                --primary-color: #006341; /* Kenyan green */
-                --secondary-color: #BB0000; /* For alerts/important items */
-                --light-color: #f4f4f4;
-                --dark-color: #333;
-            }
-            
-            * {
-                box-sizing: border-box;
-            }
-            
-            body {
-                font-family: 'Open Sans', sans-serif;
-                line-height: 1.6;
-                color: var(--dark-color);
-                background-color: var(--light-color);
-                margin: 0;
-                padding: 0;
-            }
-            
-            header {
-                background-color: var(--primary-color);
-                color: white;
-                padding: 1rem 2rem;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-                position: sticky;
-                top: 0;
-                z-index: 1000;
-            }
-            
-            .logo {
-                font-weight: 700;
-                font-size: 1.5rem;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-            }
-            
-            .logo img {
-                height: 50px;
-            }
-            
-            .nav-toggle {
-                background: none;
-                border: none;
-                color: white;
-                font-size: 1.5rem;
-                cursor: pointer;
-                position: relative;
-                z-index: 1001;
-            }
-            
-            .nav-popup {
-                display: none;
-                position: absolute;
-                top: 100%;
-                right: 20px;
-                background-color: white;
-                border-radius: 5px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-                min-width: 200px;
-                z-index: 1000;
-            }
-            
-            .nav-popup a {
-                display: block;
-                padding: 12px 16px;
-                color: var(--dark-color);
-                text-decoration: none;
-                border-bottom: 1px solid #eee;
-            }
-            
-            .nav-popup a:hover {
-                background-color: #f5f5f5;
-                color: var(--primary-color);
-            }
-            
-            .nav-popup a i {
-                margin-right: 10px;
-                width: 20px;
-                text-align: center;
-            }
-            
-            .nav-popup.show {
-                display: block;
-            }
-            
-            .hero {
-                background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1523805009345-7448845a9e53?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
-                background-size: cover;
-                background-position: center;
-                color: white;
-                text-align: center;
-                padding: 5rem 2rem;
-            }
-            
-            .btn {
-                display: inline-block;
-                background: var(--primary-color);
-                color: white;
-                padding: 0.8rem 1.5rem;
-                border: none;
-                border-radius: 5px;
-                cursor: pointer;
-                text-decoration: none;
-                font-size: 1rem;
-                margin: 1rem 0.5rem;
-                transition: all 0.3s ease;
-            }
-            
-            .btn:hover {
-                background: #004d32;
-                transform: translateY(-2px);
-            }
-            
-            .btn-outline {
-                background: transparent;
-                border: 2px solid white;
-            }
-            
-            .btn-outline:hover {
-                background: rgba(255,255,255,0.1);
-            }
-            
-            .features {
-                padding: 3rem 2rem;
-                text-align: center;
-                max-width: 1200px;
-                margin: 0 auto;
-            }
-            
-            .features-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                gap: 2rem;
-                margin-top: 2rem;
-            }
-            
-            .feature-card {
-                background: white;
-                border-radius: 5px;
-                padding: 2rem;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                transition: transform 0.3s ease;
-            }
-            
-            .feature-card:hover {
-                transform: translateY(-5px);
-            }
-            
-            .feature-card i {
-                color: var(--primary-color);
-                margin-bottom: 1rem;
-            }
-            
-            #report {
-                padding: 3rem 2rem;
-                max-width: 800px;
-                margin: 0 auto;
-            }
-            
-            .report-form {
-                background: white;
-                padding: 2rem;
-                border-radius: 5px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            }
-            
-            .form-group {
-                margin-bottom: 1.5rem;
-            }
-            
-            label {
-                display: block;
-                margin-bottom: 0.5rem;
-                font-weight: bold;
-            }
-            
-            input, textarea, select {
-                width: 100%;
-                padding: 0.8rem;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                font-family: inherit;
-            }
-            
-            textarea {
-                min-height: 150px;
-                resize: vertical;
-            }
-            
-            .form-actions {
-                text-align: center;
-                margin-top: 2rem;
-            }
-            
-            .alert {
-                padding: 1rem;
-                border-radius: 4px;
-                margin-bottom: 1rem;
-                text-align: center;
-            }
-            
-            .alert-success {
-                background-color: #d4edda;
-                color: #155724;
-                border: 1px solid #c3e6cb;
-            }
-            
-            .alert-error {
-                background-color: #f8d7da;
-                color: #721c24;
-                border: 1px solid #f5c6cb;
-            }
-            
-            footer {
-                background: var(--dark-color);
-                color: white;
-                text-align: center;
-                padding: 2rem;
-                margin-top: 3rem;
-            }
-            
-            @media (max-width: 768px) {
-                .hero {
-                    padding: 3rem 1rem;
-                }
-                
-                .features {
-                    padding: 2rem 1rem;
-                }
-                
-                #report {
-                    padding: 2rem 1rem;
-                }
-            }
-        </style>
-    </head>
-    <body>
-        <header>
-            <div class="logo">
-                <img src="https://via.placeholder.com/50x50?text=CWK" alt="Corruption Watch Kenya Logo">
-                <span>Corruption Watch Kenya</span>
-            </div>
-            <button class="nav-toggle" aria-label="toggle navigation" id="navToggle">
-                <i class="fas fa-bars"></i>
-            </button>
-            <div class="nav-popup" id="navPopup">
-                <a href="dashboard.html">
-                    <i class="fas fa-chart-pie"></i>
-                    Dashboard
-                </a>
-                <a href="#report">
-                    <i class="fas fa-flag"></i>
-                    Report Corruption
-                </a>
-                <a href="#about">
-                    <i class="fas fa-info-circle"></i>
-                    About Us
-                </a>
-            </div>    
-        </header>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Corruption - Corruption Watch Kenya</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <style>
+        :root {
+            --primary-color: #006341;
+            --secondary-color: #BB0000;
+            --light-color: #f4f4f4;
+            --dark-color: #333;
+        }
         
-        <section class="hero">
-            <h1>Fight Corruption in Kenya</h1>
-            <p>Report corruption cases anonymously and safely through our secure platform</p>
-            <a href="#report" class="btn">Report Now</a>
-            <a href="#learn" class="btn btn-outline">Learn More</a>
-        </section>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            line-height: 1.6;
+            color: var(--dark-color);
+            background-color: var(--light-color);
+            margin: 0;
+            padding: 0;
+        }
         
-        <section class="features" id="learn">
-            <h2>Why Use Our Platform?</h2>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <i class="fas fa-user-secret fa-3x"></i>
-                    <h3>100% Anonymous</h3>
-                    <p>Your identity is protected with advanced encryption technology. We don't store any personal information that could identify you.</p>
-                </div>
-                <div class="feature-card">
-                    <i class="fas fa-chart-line fa-3x"></i>
-                    <h3>Case Tracking</h3>
-                    <p>Follow the progress of your report through secure channels using your unique case reference number.</p>
-                </div>
-                <div class="feature-card">
-                    <i class="fas fa-shield-alt fa-3x"></i>
-                    <h3>Legal Protection</h3>
-                    <p>Information about your rights and protections as a whistleblower under Kenyan law.</p>
-                </div>
-            </div>
-        </section>
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
         
-        <section id="report" class="report-section">
-            <h2>Report Corruption</h2>
-            <div class="report-form">
-                <div id="formAlerts"></div>
-                <form id="corruptionReportForm">
-                    <div class="form-group">
-                        <label for="reportType">Type of Corruption</label>
-                        <select id="reportType" name="reportType" required>
+        .logo {
+            font-weight: 700;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logo img {
+            height: 50px;
+        }
+        
+        .report-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .report-form {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .form-title {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+        
+        textarea.form-control {
+            min-height: 150px;
+            resize: vertical;
+        }
+        
+        .select-wrapper {
+            position: relative;
+        }
+        
+        .select-wrapper::after {
+            content: "▼";
+            font-size: 0.8rem;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+        
+        select.form-control {
+            appearance: none;
+            padding-right: 2rem;
+        }
+        
+        .file-upload {
+            border: 2px dashed #ddd;
+            padding: 2rem;
+            text-align: center;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .file-upload:hover {
+            border-color: var(--primary-color);
+        }
+        
+        .file-upload i {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        
+        .file-upload input[type="file"] {
+            display: none;
+        }
+        
+        .file-info {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: var(--primary-color);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-block {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.1rem;
+        }
+        
+        .map-container {
+            height: 300px;
+            background: #eee;
+            margin-bottom: 1.5rem;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        
+        footer {
+            background: var(--dark-color);
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .map-marker {
+            background-color: var(--secondary-color);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+        
+        .status-message {
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            display: block;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="logo.png" alt="Corruption Watch Kenya Logo">
+            <span>Corruption Watch Kenya</span>
+        </div>
+    </header>
+    
+    <div class="report-container">
+        <div class="report-form">
+            <h2 class="form-title">Report Corruption Case</h2>
+            <div id="statusMessage" class="status-message"></div>
+            <form id="corruptionReportForm">
+                <div class="form-group">
+                    <label for="corruptionType">Type of Corruption</label>
+                    <div class="select-wrapper">
+                        <select class="form-control" id="corruptionType" name="corruptionType" required>
                             <option value="">Select type...</option>
                             <option value="bribery">Bribery</option>
                             <option value="embezzlement">Embezzlement</option>
+                            <option value="nepotism">Nepotism/Favoritism</option>
                             <option value="fraud">Fraud</option>
-                            <option value="nepotism">Nepotism</option>
-                            <option value="procurement">Procurement Fraud</option>
+                            <option value="extortion">Extortion</option>
+                            <option value="abuse-of-power">Abuse of Power</option>
+                            <option value="procurement-fraud">Procurement Fraud</option>
                             <option value="other">Other</option>
                         </select>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="location">Location (County/Institution)</label>
-                        <input type="text" id="location" name="location" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea class="form-control" id="description" name="description" required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Location</label>
+                    <div class="map-container">
+                        <div id="map"></div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="date">Approximate Date</label>
-                        <input type="date" id="date" name="date">
+                    <input type="text" class="form-control" id="location" name="location" required>
+                    <input type="hidden" id="latitude" name="latitude">
+                    <input type="hidden" id="longitude" name="longitude">
+                </div>
+                
+                <div class="form-group">
+                    <label>Evidence Upload</label>
+                    <div class="file-upload" id="fileUploadArea">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Drag and drop files here or click to browse</p>
+                        <input type="file" id="evidenceFiles" name="evidenceFiles" multiple>
+                        <div class="file-info" id="fileInfo">No files selected</div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="description">Detailed Description</label>
-                        <textarea id="description" name="description" required></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="evidence">Evidence (Optional - you can upload files anonymously)</label>
-                        <input type="file" id="evidence" name="evidence" multiple>
-                        <small>Max file size: 5MB each. Supported formats: PDF, JPG, PNG, DOC</small>
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button type="submit" class="btn">Submit Report</button>
-                    </div>
-                </form>
-            </div>
-        </section>
-        
-        <footer>
-            <p>Corruption Watch Kenya &copy; 2023</p>
-            <p>In partnership with EACC and other anti-corruption agencies</p>
-            <p><small>All reports are confidential and protected under the Whistleblower Protection Act</small></p>
-        </footer>
-        
-        <script>
-            // Navigation toggle functionality
-            document.getElementById('navToggle').addEventListener('click', function() {
-                const popup = document.getElementById('navPopup');
-                popup.classList.toggle('show');
-            });
+                </div>
+                
+                <div class="form-group">
+                    <label for="dateOccurred">Date Occurred</label>
+                    <input type="date" class="form-control" id="dateOccurred" name="dateOccurred">
+                </div>
+                
+                <div class="form-group">
+                    <label for="involvedParties">Involved Parties</label>
+                    <input type="text" class="form-control" id="involvedParties" name="involvedParties">
+                </div>
+                
+                <button type="submit" class="btn btn-block">
+                    <i class="fas fa-paper-plane"></i> Submit Report Anonymously
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <footer>
+        <p>Corruption Watch Kenya &copy; 2023</p>
+        <p>In partnership with EACC and other anti-corruption agencies</p>
+    </footer>
 
-            // Close the popup when clicking outside
-            document.addEventListener('click', function(event) {
-                const popup = document.getElementById('navPopup');
-                const toggle = document.getElementById('navToggle');
-                
-                if (!popup.contains(event.target) && !toggle.contains(event.target)) {
-                    popup.classList.remove('show');
-                }
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script>
+        // File Upload Handling
+        const fileUploadArea = document.getElementById('fileUploadArea');
+        const evidenceFiles = document.getElementById('evidenceFiles');
+        const fileInfo = document.getElementById('fileInfo');
+        const statusMessage = document.getElementById('statusMessage');
+        
+        fileUploadArea.addEventListener('click', () => evidenceFiles.click());
+        
+        evidenceFiles.addEventListener('change', updateFileInfo);
+        
+        fileUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUploadArea.style.borderColor = 'var(--primary-color)';
+        });
+        
+        fileUploadArea.addEventListener('dragleave', () => {
+            fileUploadArea.style.borderColor = '#ddd';
+        });
+        
+        fileUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUploadArea.style.borderColor = '#ddd';
+            evidenceFiles.files = e.dataTransfer.files;
+            updateFileInfo();
+        });
+        
+        function updateFileInfo() {
+            if (evidenceFiles.files.length > 0) {
+                const names = Array.from(evidenceFiles.files).map(f => f.name).join(', ');
+                fileInfo.textContent = `${evidenceFiles.files.length} file(s) selected: ${names.substring(0, 50)}${names.length > 50 ? '...' : ''}`;
+            } else {
+                fileInfo.textContent = 'No files selected';
+            }
+        }
+        
+        // Map Implementation
+        let map, marker;
+        
+        function initMap() {
+            map = L.map('map', {
+                center: [0.0236, 37.9062],
+                zoom: 6,
+                preferCanvas: true
             });
-
-            // Form submission handling
-            document.getElementById('corruptionReportForm').addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                const form = e.target;
-                const formData = new FormData(form);
-                const alertsContainer = document.getElementById('formAlerts');
-                
-                try {
-                    // Show loading state
-                    const submitBtn = form.querySelector('button[type="submit"]');
-                    submitBtn.disabled = true;
-                    submitBtn.textContent = 'Submitting...';
-                    
-                    // Send data to serverless function
-                    const response = await fetch('/api/submit-report', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    const result = await response.json();
-                    
-                    if (response.ok) {
-                        // Show success message
-                        alertsContainer.innerHTML = `
-                            <div class="alert alert-success">
-                                <i class="fas fa-check-circle"></i>
-                                Report submitted successfully! Your case reference number is: ${result.caseId}
-                            </div>
-                        `;
-                        
-                        // Reset form
-                        form.reset();
-                    } else {
-                        // Show error message
-                        alertsContainer.innerHTML = `
-                            <div class="alert alert-error">
-                                <i class="fas fa-exclamation-circle"></i>
-                                Error: ${result.message || 'Failed to submit report. Please try again.'}
-                            </div>
-                        `;
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+            
+            marker = L.marker([0.0236, 37.9062], {
+                draggable: true,
+                icon: L.divIcon({ className: 'map-marker', iconSize: [24, 24] })
+            }).addTo(map);
+            
+            marker.on('dragend', updateLocation);
+            map.on('click', (e) => {
+                marker.setLatLng(e.latlng);
+                updateLocation();
+            });
+            
+            updateLocation();
+        }
+        
+        function updateLocation() {
+            const { lat, lng } = marker.getLatLng();
+            document.getElementById('latitude').value = lat;
+            document.getElementById('longitude').value = lng;
+            document.getElementById('location').value = `Latitude: ${lat.toFixed(4)}, Longitude: ${lng.toFixed(4)}`;
+            
+            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.address) {
+                        const addressParts = [
+                            data.address.road,
+                            data.address.suburb,
+                            data.address.city,
+                            data.address.county,
+                            data.address.country
+                        ].filter(Boolean);
+                        document.getElementById('location').value = addressParts.join(', ');
                     }
-                } catch (error) {
-                    console.error('Submission error:', error);
-                    alertsContainer.innerHTML = `
-                        <div class="alert alert-error">
-                            <i class="fas fa-exclamation-circle"></i>
-                            Network error. Please check your connection and try again.
-                        </div>
-                    `;
-                } finally {
-                    // Reset button state
-                    const submitBtn = form.querySelector('button[type="submit"]');
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Submit Report';
-                    
-                    // Scroll to alerts
-                    alertsContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                });
+        }
+        
+        // Form Submission with MongoDB Integration
+        document.getElementById('corruptionReportForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            
+            // Clear previous status messages
+            statusMessage.className = 'status-message';
+            statusMessage.textContent = '';
+            
+            try {
+                // Prepare form data
+                const formData = {
+                    corruptionType: document.getElementById('corruptionType').value,
+                    description: document.getElementById('description').value,
+                    location: document.getElementById('location').value,
+                    latitude: document.getElementById('latitude').value,
+                    longitude: document.getElementById('longitude').value,
+                    dateOccurred: document.getElementById('dateOccurred').value,
+                    involvedParties: document.getElementById('involvedParties').value,
+                    files: []
+                };
+                
+                // Process files if any
+                const files = document.getElementById('evidenceFiles').files;
+                for (let i = 0; i < files.length; i++) {
+                    formData.files.push({
+                        name: files[i].name,
+                        type: files[i].type,
+                        size: files[i].size
+                        // In a real implementation, you would upload the file to storage
+                        // and store the reference URL in MongoDB
+                    });
                 }
-            });
-        </script>
-    </body>
+                
+                // Send to Vercel API endpoint
+                const response = await fetch('/api/report', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.message || 'Failed to submit report');
+                }
+                
+                // Success
+                statusMessage.className = 'status-message success';
+                statusMessage.innerHTML = `
+                    <strong>Report submitted successfully!</strong><br>
+                    Your reference number: ${result.referenceId}<br>
+                    <small>We'll investigate this matter and take appropriate action.</small>
+                `;
+                
+                // Reset form
+                this.reset();
+                fileInfo.textContent = 'No files selected';
+                marker.setLatLng([0.0236, 37.9062]);
+                map.setView([0.0236, 37.9062], 6);
+                
+            } catch (err) {
+                console.error('Submission error:', err);
+                statusMessage.className = 'status-message error';
+                statusMessage.innerHTML = `
+                    <strong>Error submitting report:</strong> ${err.message}<br>
+                    Please try again or contact support@corruptionwatchkenya.org
+                `;
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            }
+        });
+
+        // Initialize Map when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initMap);
+    </script>
+</body>
 </html>
