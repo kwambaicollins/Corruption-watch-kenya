@@ -374,88 +374,79 @@
                 });
         }
         
-        // Form Submission with MongoDB Integration
-        document.getElementById('corruptionReportForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const originalBtnText = submitBtn.innerHTML;
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
-            
-            // Clear previous status messages
-            statusMessage.className = 'status-message';
-            statusMessage.textContent = '';
-            
-            try {
-                // Prepare form data
-                const formData = {
-                    corruptionType: document.getElementById('corruptionType').value,
-                    description: document.getElementById('description').value,
-                    location: document.getElementById('location').value,
-                    latitude: document.getElementById('latitude').value,
-                    longitude: document.getElementById('longitude').value,
-                    dateOccurred: document.getElementById('dateOccurred').value,
-                    involvedParties: document.getElementById('involvedParties').value,
-                    files: []
-                };
-                
-                // Process files if any
-                const files = document.getElementById('evidenceFiles').files;
-                for (let i = 0; i < files.length; i++) {
-                    formData.files.push({
-                        name: files[i].name,
-                        type: files[i].type,
-                        size: files[i].size
-                        // In a real implementation, you would upload the file to storage
-                        // and store the reference URL in MongoDB
-                    });
-                }
-                
-                // Send to Vercel API endpoint
-                const response = await fetch('/api/report', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                });
-                
-                const result = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(result.message || 'Failed to submit report');
-                }
-                
-                // Success
-                statusMessage.className = 'status-message success';
-                statusMessage.innerHTML = `
-                    <strong>Report submitted successfully!</strong><br>
-                    Your reference number: ${result.referenceId}<br>
-                    <small>We'll investigate this matter and take appropriate action.</small>
-                `;
-                
-                // Reset form
-                this.reset();
-                fileInfo.textContent = 'No files selected';
-                marker.setLatLng([0.0236, 37.9062]);
-                map.setView([0.0236, 37.9062], 6);
-                
-            } catch (err) {
-                console.error('Submission error:', err);
-                statusMessage.className = 'status-message error';
-                statusMessage.innerHTML = `
-                    <strong>Error submitting report:</strong> ${err.message}<br>
-                    Please try again or contact support@corruptionwatchkenya.org
-                `;
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalBtnText;
-            }
+       // Updated Form Submission Handler
+document.getElementById('corruptionReportForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+    statusMessage.className = 'status-message';
+    statusMessage.textContent = '';
+
+    try {
+        // Prepare form data
+        const formData = new FormData();
+        formData.append('corruptionType', document.getElementById('corruptionType').value);
+        formData.append('description', document.getElementById('description').value);
+        formData.append('location', document.getElementById('location').value);
+        formData.append('latitude', document.getElementById('latitude').value);
+        formData.append('longitude', document.getElementById('longitude').value);
+        formData.append('dateOccurred', document.getElementById('dateOccurred').value);
+        formData.append('involvedParties', document.getElementById('involvedParties').value);
+        
+        // Append files
+        const files = document.getElementById('evidenceFiles').files;
+        for (let i = 0; i < files.length; i++) {
+            formData.append('evidenceFiles', files[i]);
+        }
+
+        // Send to API endpoint
+        const response = await fetch('/api/report', {
+            method: 'POST',
+            body: formData
+            // Don't set Content-Type header - let the browser set it with boundary
         });
 
-        // Initialize Map when DOM is loaded
-        document.addEventListener('DOMContentLoaded', initMap);
-    </script>
-</body>
-</html>
+        // Handle response
+        let result;
+        const contentType = response.headers.get('content-type');
+        
+        if (contentType && contentType.includes('application/json')) {
+            result = await response.json();
+        } else {
+            const text = await response.text();
+            throw new Error(text || `Server returned status ${response.status}`);
+        }
+
+        if (!response.ok) {
+            throw new Error(result.message || result.error || `Request failed with status ${response.status}`);
+        }
+
+        // Success handling
+        statusMessage.className = 'status-message success';
+        statusMessage.innerHTML = `
+            <strong>Report submitted successfully!</strong><br>
+            Your reference number: ${result.referenceId}<br>
+            <small>We'll investigate this matter and take appropriate action.</small>
+        `;
+
+        // Reset form
+        this.reset();
+        fileInfo.textContent = 'No files selected';
+        marker.setLatLng([0.0236, 37.9062]);
+        map.setView([0.0236, 37.9062], 6);
+
+    } catch (err) {
+        console.error('Submission error:', err);
+        statusMessage.className = 'status-message error';
+        statusMessage.innerHTML = `
+            <strong>Error submitting report:</strong> ${err.message}<br>
+            Please try again or contact support@corruptionwatchkenya.org
+        `;
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+    }
+});
