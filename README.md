@@ -1,0 +1,2 @@
+Corruption Watch Kenya (CWK) is a web-based anti-corruption reporting and transparency platform designed to empower citizens to report incidents of corruption anonymously, securely, and transparently. It leverages modern web technologies and, optionally, blockchain and AI to enhance accountability, public participation, and data integrity in anti-corruption efforts.
+Visit: https://corruption-watch-kenya-lws6-gvkk6ay3t.vercel.app/
