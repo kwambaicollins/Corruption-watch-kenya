@@ -1,38 +1,46 @@
-// Vercel serverless function to handle report submissions
-import { MongoClient, ServerApiVersion } from 'mongodb';
+import { MongoClient } from 'mongodb';
+import formidable from 'formidable-serverless';
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
 const uri = process.env.MONGODB_URI;
-const client = new MongoClient(uri, {
-  serverApi: ServerApiVersion.v1,
-});
+const client = new MongoClient(uri);
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method Not Allowed' });
-  }
+  if (req.method === 'POST') {
+    const form = new formidable.IncomingForm();
+    form.parse(req, async (err, fields, files) => {
+      if (err) return res.status(500).json({ error: 'Error parsing form data' });
 
-  try {
-    await client.connect();
-    const db = client.db('corruption_watch');
-    const collection = db.collection('reports');
+      try {
+        await client.connect();
+        const db = client.db('corruption_watch');
+        const collection = db.collection('reports');
 
-    const data = {
-      corruptionType: req.body.corruptionType,
-      description: req.body.description,
-      location: req.body.location,
-      latitude: req.body.latitude,
-      longitude: req.body.longitude,
-      dateOccurred: req.body.dateOccurred,
-      involvedParties: req.body.involvedParties,
-      createdAt: new Date(),
-      referenceId: 'CWK-' + Date.now().toString(36).toUpperCase(),
-    };
+        const doc = {
+          type: fields.corruptionType,
+          description: fields.description,
+          location: fields.location,
+          latitude: fields.latitude,
+          longitude: fields.longitude,
+          dateOccurred: fields.dateOccurred,
+          involvedParties: fields.involvedParties,
+          submittedAt: new Date(),
+          referenceId: Math.random().toString(36).substring(2, 10).toUpperCase()
+        };
 
-    const result = await collection.insertOne(data);
-
-    res.status(201).json({ message: 'Report submitted', referenceId: data.referenceId });
-  } catch (error) {
-    console.error('Error saving report:', error);
-    res.status(500).json({ message: 'Internal Server Error' });
+        const result = await collection.insertOne(doc);
+        res.status(200).json({ message: 'Report submitted successfully!', referenceId: doc.referenceId });
+      } catch (dbErr) {
+        console.error('DB Error:', dbErr);
+        res.status(500).json({ error: 'Database error occurred' });
+      }
+    });
+  } else {
+    res.status(405).json({ error: 'Method Not Allowed' });
   }
 }
