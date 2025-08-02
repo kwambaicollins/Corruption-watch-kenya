@@ -353,26 +353,58 @@
         
        // Updated Form Submission with Proper Response Handling
     document.getElementById('corruptionReportForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const submitBtn = e.target.querySelector('button[type="submit"]');
-        const originalBtnText = submitBtn.innerHTML;
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+    e.preventDefault();
+    
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
 
-        const formData = new FormData(this);
-        const files = document.getElementById('evidenceFiles').files;
+    const formData = new FormData(this);
+    const files = document.getElementById('evidenceFiles').files;
+    
+    try {
+        // Create a new FormData object for the API request
+        const apiFormData = new FormData();
         
-        // Append files to FormData
-        for (let i = 0; i < files.length; i++) {
-            formData.append('evidenceFiles', files[i]);
+        // Append all form fields
+        for (const [key, value] of formData.entries()) {
+            if (key !== 'evidenceFiles') {
+                apiFormData.append(key, value);
+            }
         }
         
-        try {
-            const response = await fetch('https://corruptionwatch-kenya.vercel.app/api/report', {
-                method: 'POST',
-                body: formData
-            });
+        // Append files if any
+        for (let i = 0; i < files.length; i++) {
+            apiFormData.append('evidenceFiles', files[i]);
+        }
+        
+        const response = await fetch('/api/report', {
+            method: 'POST',
+            body: apiFormData
+        });
+
+        const result = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(result.error || result.message || `Server error: ${response.status}`);
+        }
+        
+        // Success case
+        alert(`Report submitted successfully! Your reference number is ${result.referenceId}`);
+        this.reset();
+        fileInfo.textContent = 'No files selected';
+        marker.setLatLng([0.0236, 37.9062]);
+        map.setView([0.0236, 37.9062], 6);
+        
+    } catch (err) {
+        console.error('Submission error:', err);
+        alert(`Error: ${err.message}\n\nPlease try again or contact support@corruptionwatchkenya.org`);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+    }
+});
 
             // Clone the response to read it multiple times if needed
             const responseClone = response.clone();
@@ -414,3 +446,4 @@
 </script>
 </body>
 </html>
+
