@@ -1,19 +1,12 @@
-npm install @supabase/supabase-js
-import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // or use ANON key for read-only
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { createClient } from '@supabase/supabase-js'
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
+const supabase = createClient(https://seskyvuvplritijwnjbw.supabase.co, eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlc2t5dnV2cGxyaXRpanduamJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwNzM4OTIsImV4cCI6MjA2OTY0OTg5Mn0.0O1EV1J7yfHPojaOI9j4F5uJb0Q1e5RnIqlhJv5LeCU)
 
-  const { corruptionType, description, location, latitude, longitude, dateOccurred, involvedParties } = req.body;
+const { corruptionType, description, location, latitude, longitude, dateOccurred, involvedParties } = req.body;
 
-  const { data, error } = await supabase
-    .from('reports') // make sure this table exists
+const { data, error } = await supabase
+    .from('corruuption_reports') // make sure this table exists
     .insert([
       {
         corruption_type: corruptionType,
