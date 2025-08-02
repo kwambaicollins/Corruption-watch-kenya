@@ -3,10 +3,7 @@ import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 
 // Initialize Supabase client with environment variables
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-)
+const supabase = createClient(https://seskyvuvplritijwnjbw.supabase.co, eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlc2t5dnV2cGxyaXRpanduamJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwNzM4OTIsImV4cCI6MjA2OTY0OTg5Mn0.0O1EV1J7yfHPojaOI9j4F5uJb0Q1e5RnIqlhJv5LeCU)
 
 // Configure multer for file uploads
 const upload = multer({
