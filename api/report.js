@@ -9,20 +9,21 @@ const supabase = createClient(
 // This should be inside an async function that has access to 'req' and 'res'
 async function submitReport(req, res) {
   const { corruptionType, description, location, latitude, longitude, dateOccurred, involvedParties } = req.body;
-
+const files = req.files?.evidenceFiles || []; // Assuming you're using multer or similar
   try {
     const { data, error } = await supabase
-      .from('corruption_reports') // Fixed typo in table name (was 'corruuption_reports')
-      .insert([
-        {
-          corruption_type: corruptionType,
-          description,
-          location,
-          latitude,
-          longitude,
-          date_occurred: dateOccurred,
-          involved_parties: involvedParties
-        }
+  .from('corruption_reports')
+  .insert([
+    {
+      corruption_type: corruptionType,
+      description,
+      location,
+      latitude: parseFloat(latitude),
+      longitude: parseFloat(longitude),
+      date_occurred: dateOccurred,
+      involved_parties: involvedParties, // Note: Fix the typo (Parties vs Partes)
+      attachments: files.map(file => file.path) // Store file paths if you save them
+    }
       ]);
 
     if (error) {
