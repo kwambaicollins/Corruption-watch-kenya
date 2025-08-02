@@ -1,16 +1,15 @@
 import { createClient } from '@supabase/supabase-js'
-import { v4 as uuidv4 } from 'uuid';
 import { IncomingForm } from 'formidable';
+import { v4 as uuidv4 } from 'uuid';
 
-// Initialize Supabase client
 const supabase = createClient(
-  process.env.SUPABASE_URL || 'https://seskyvuvplritijwnjbw.supabase.co',
-  process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlc2t5dnV2cGxyaXRpanduamJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwNzM4OTIsImV4cCI6MjA2OTY0OTg5Mn0.0O1EV1J7yfHPojaOI9j4F5uJb0Q1e5RnIqlhJv5LeCU'
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
 );
 
 export const config = {
   api: {
-    bodyParser: false, // Disable default body parser
+    bodyParser: false,
   },
 };
 
@@ -21,71 +20,63 @@ export default async function handler(req, res) {
 
   try {
     // Parse form data
-    const data = await new Promise((resolve, reject) => {
+    const { fields, files } = await new Promise((resolve, reject) => {
       const form = new IncomingForm();
       form.parse(req, (err, fields, files) => {
-        if (err) return reject(err);
+        if (err) reject(err);
         resolve({ fields, files });
       });
     });
 
-    const { corruptionType, description, location, latitude, longitude, dateOccurred, involvedParties } = data.fields;
-    const fileList = data.files.evidenceFiles || [];
-
     // Validate required fields
-    if (!corruptionType || !description || !location || !latitude || !longitude || !dateOccurred) {
+    const required = ['corruptionType', 'description', 'location', 'latitude', 'longitude', 'dateOccurred'];
+    if (required.some(field => !fields[field])) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Handle file uploads
+    // Process files
     const filePaths = [];
-    for (const file of (Array.isArray(fileList) ? fileList : [fileList])) {
-      const fileExt = file.originalFilename.split('.').pop();
-      const fileName = `${uuidv4()}.${fileExt}`;
-      const filePath = `evidence/${fileName}`;
+    const fileList = files.evidenceFiles || [];
+    const filesToProcess = Array.isArray(fileList) ? fileList : [fileList];
+    
+    for (const file of filesToProcess) {
+      const ext = file.originalFilename.split('.').pop();
+      const path = `evidence/${uuidv4()}.${ext}`;
       
-      const fileContent = fs.readFileSync(file.filepath);
-      
-      const { error: uploadError } = await supabase
-        .storage
+      const { error } = await supabase.storage
         .from('reports')
-        .upload(filePath, fileContent, {
-          contentType: file.mimetype
-        });
-
-      if (uploadError) throw uploadError;
-      filePaths.push(filePath);
+        .upload(path, file.filepath);
+      
+      if (error) throw error;
+      filePaths.push(path);
     }
 
-    // Insert report into database
-    const { data: dbData, error: dbError } = await supabase
+    // Insert report
+    const { data, error } = await supabase
       .from('corruption_reports')
-      .insert([
-        {
-          corruption_type: corruptionType,
-          description,
-          location,
-          latitude: parseFloat(latitude),
-          longitude: parseFloat(longitude),
-          evidence_files: filePaths,
-          date_occurred: new Date(dateOccurred).toISOString(),
-          involved_parties: involvedParties,
-          created_at: new Date().toISOString()
-        }
-      ])
+      .insert([{
+        corruption_type: fields.corruptionType,
+        description: fields.description,
+        location: fields.location,
+        latitude: parseFloat(fields.latitude),
+        longitude: parseFloat(fields.longitude),
+        evidence_files: filePaths,
+        date_occurred: new Date(fields.dateOccurred).toISOString(),
+        created_at: new Date().toISOString()
+      }])
       .select();
 
-    if (dbError) throw dbError;
+    if (error) throw error;
 
     return res.status(201).json({ 
-      message: 'Report submitted successfully', 
-      id: dbData[0].id 
+      message: 'Report submitted', 
+      id: data[0].id 
     });
 
   } catch (err) {
-    console.error('Report submission error:', err);
+    console.error('Error:', err);
     return res.status(500).json({ 
-      error: 'Internal server error: ' + err.message
+      error: 'Server error: ' + err.message 
     });
   }
 }
