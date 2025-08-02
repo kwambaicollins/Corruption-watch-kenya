@@ -406,44 +406,8 @@
     }
 });
 
-            // Clone the response to read it multiple times if needed
-            const responseClone = response.clone();
-            
-            // First try to parse as JSON
-            try {
-                const result = await responseClone.json();
-                if (!response.ok) {
-                    throw new Error(result.error || result.message || `Server error: ${response.status}`);
-                }
-                alert(`Report submitted successfully! Your reference number is ${result.referenceId}`);
-                this.reset();
-                fileInfo.textContent = 'No files selected';
-                marker.setLatLng([0.0236, 37.9062]);
-                map.setView([0.0236, 37.9062], 6);
-                return;
-            } catch (jsonError) {
-                console.log('Not JSON response, trying text');
-            }
-
-            // If not JSON, read as text
-            const text = await response.text();
-            if (!response.ok) {
-                throw new Error(text || `Request failed with status ${response.status}`);
-            }
-            alert(`Success! Server response: ${text.substring(0, 100)}`);
-            
-        } catch (err) {
-            console.error('Submission error:', err);
-            alert(`Error: ${err.message}\n\nPlease try again or contact support@corruptionwatchkenya.org`);
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalBtnText;
-        }
-    });
-
     // Initialize Map when DOM is loaded
     document.addEventListener('DOMContentLoaded', initMap);
 </script>
 </body>
 </html>
-
