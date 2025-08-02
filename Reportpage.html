@@ -3,413 +3,145 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Report Corruption - Corruption Watch Kenya</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <title>Report Corruption</title>
+    <link href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: #006341;
-            --secondary-color: #BB0000;
-            --light-color: #f4f4f4;
-            --dark-color: #333;
-        }
-        
         body {
-            font-family: 'Open Sans', sans-serif;
+            font-family: Arial, sans-serif;
             line-height: 1.6;
-            color: var(--dark-color);
-            background-color: var(--light-color);
-            margin: 0;
-            padding: 0;
-        }
-        
-        header {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            position: relative;
-            z-index: 100;
-        }
-        
-        .logo {
-            font-weight: 700;
-            font-size: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .logo img {
-            height: 50px;
-        }
-        
-        .report-container {
             max-width: 800px;
-            margin: 2rem auto;
-            padding: 0 1rem;
+            margin: 0 auto;
+            padding: 20px;
         }
-        
-        .report-form {
-            background: white;
-            border-radius: 8px;
-            padding: 2rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .form-title {
-            color: var(--primary-color);
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-        
         .form-group {
-            margin-bottom: 1.5rem;
+            margin-bottom: 15px;
         }
-        
-        .form-group label {
+        label {
             display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
+            margin-bottom: 5px;
+            font-weight: bold;
         }
-        
-        .form-control {
+        input, select, textarea {
             width: 100%;
-            padding: 0.8rem;
+            padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
-            font-family: inherit;
-            font-size: 1rem;
         }
-        
-        textarea.form-control {
-            min-height: 150px;
-            resize: vertical;
+        textarea {
+            min-height: 100px;
         }
-        
-        .select-wrapper {
-            position: relative;
+        #map {
+            height: 300px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
         }
-        
-        .select-wrapper::after {
-            content: "▼";
-            font-size: 0.8rem;
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            pointer-events: none;
+        button {
+            background: #006341;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
         }
-        
-        select.form-control {
-            appearance: none;
-            padding-right: 2rem;
-        }
-        
         .file-upload {
             border: 2px dashed #ddd;
-            padding: 2rem;
+            padding: 20px;
             text-align: center;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .file-upload:hover {
-            border-color: var(--primary-color);
-        }
-        
-        .file-upload i {
-            font-size: 2rem;
-            color: var(--primary-color);
-            margin-bottom: 1rem;
-        }
-        
-        .file-upload input[type="file"] {
-            display: none;
-        }
-        
-        .file-info {
-            margin-top: 1rem;
-            font-size: 0.9rem;
-            color: #666;
-        }
-        
-        .btn {
-            display: inline-block;
-            background: var(--primary-color);
-            color: white;
-            padding: 0.8rem 1.5rem;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-block {
-            display: block;
-            width: 100%;
-            padding: 1rem;
-            font-size: 1.1rem;
-        }
-        
-        .map-container {
-            height: 300px;
-            background: #eee;
-            margin-bottom: 1.5rem;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        
-        #map {
-            height: 100%;
-            width: 100%;
-        }
-        
-        footer {
-            background: var(--dark-color);
-            color: white;
-            text-align: center;
-            padding: 2rem;
-            margin-top: 2rem;
-        }
-        
-        .map-marker {
-            background-color: var(--secondary-color);
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            border: 2px solid white;
-        }
-
-        /* Loading spinner */
-        .fa-spinner {
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            margin: 10px 0;
         }
     </style>
 </head>
 <body>
-    <header>
-        <div class="logo">
-            <img src="logo.png" alt="Corruption Watch Kenya Logo">
-            <span>Corruption Watch Kenya</span>
+    <h1>Report Corruption Case</h1>
+    <form id="reportForm">
+        <div class="form-group">
+            <label for="corruptionType">Type of Corruption</label>
+            <select id="corruptionType" required>
+                <option value="">Select type...</option>
+                <option value="bribery">Bribery</option>
+                <option value="embezzlement">Embezzlement</option>
+                <option value="fraud">Fraud</option>
+                <option value="other">Other</option>
+            </select>
         </div>
-    </header>
-    
-    <div class="report-container">
-        <div class="report-form">
-            <h2 class="form-title">Report Corruption Case</h2>
-            <form id="corruptionReportForm">
-                <div class="form-group">
-                    <label for="corruptionType">Type of Corruption</label>
-                    <div class="select-wrapper">
-                        <select class="form-control" id="corruptionType" name="corruptionType" required>
-                            <option value="">Select type...</option>
-                            <option value="bribery">Bribery</option>
-                            <option value="embezzlement">Embezzlement</option>
-                            <option value="nepotism">Nepotism/Favoritism</option>
-                            <option value="fraud">Fraud</option>
-                            <option value="extortion">Extortion</option>
-                            <option value="abuse-of-power">Abuse of Power</option>
-                            <option value="procurement-fraud">Procurement Fraud</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="description">Description</label>
-                    <textarea class="form-control" id="description" name="description" required></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label>Location</label>
-                    <div class="map-container">
-                        <div id="map"></div>
-                    </div>
-                    <input type="text" class="form-control" id="location" name="location" required>
-                    <input type="hidden" id="latitude" name="latitude">
-                    <input type="hidden" id="longitude" name="longitude">
-                </div>
-                
-                <div class="form-group">
-                    <label>Evidence Upload (Max 5MB each)</label>
-                    <div class="file-upload" id="fileUploadArea">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <p>Drag and drop files here or click to browse</p>
-                        <input type="file" id="evidenceFiles" name="evidenceFiles" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx">
-                        <div class="file-info" id="fileInfo">No files selected</div>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="dateOccurred">Date Occurred</label>
-                    <input type="date" class="form-control" id="dateOccurred" name="dateOccurred" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="involvedParties">Involved Parties</label>
-                    <input type="text" class="form-control" id="involvedParties" name="involvedParties">
-                </div>
-                
-                <button type="submit" class="btn btn-block">
-                    <i class="fas fa-paper-plane"></i> Submit Report Anonymously
-                </button>
-            </form>
+        
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" required></textarea>
         </div>
-    </div>
-    
-    <footer>
-        <p>Corruption Watch Kenya &copy; <span id="currentYear"></span></p>
-        <p>In partnership with EACC and other anti-corruption agencies</p>
-    </footer>
+        
+        <div class="form-group">
+            <label>Location</label>
+            <div id="map"></div>
+            <input type="text" id="location" readonly>
+            <input type="hidden" id="latitude">
+            <input type="hidden" id="longitude">
+        </div>
+        
+        <div class="form-group">
+            <label>Evidence (Max 5MB each)</label>
+            <div class="file-upload" id="fileUploadArea">
+                <p>Click to select files</p>
+                <input type="file" id="evidenceFiles" multiple style="display: none">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="dateOccurred">Date Occurred</label>
+            <input type="date" id="dateOccurred" required>
+        </div>
+        
+        <button type="submit">Submit Report</button>
+    </form>
 
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
     <script>
-        // File Upload Handling
-        const fileUploadArea = document.getElementById('fileUploadArea');
-        const evidenceFiles = document.getElementById('evidenceFiles');
-        const fileInfo = document.getElementById('fileInfo');
-        const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+        // Initialize map
+        const map = L.map('map').setView([0.0236, 37.9062], 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        const marker = L.marker(map.getCenter(), {draggable: true}).addTo(map);
         
-        fileUploadArea.addEventListener('click', () => evidenceFiles.click());
-        
-        evidenceFiles.addEventListener('change', updateFileInfo);
-        
-        fileUploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            fileUploadArea.style.borderColor = 'var(--primary-color)';
-        });
-        
-        fileUploadArea.addEventListener('dragleave', () => {
-            fileUploadArea.style.borderColor = '#ddd';
-        });
-        
-        fileUploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            fileUploadArea.style.borderColor = '#ddd';
-            evidenceFiles.files = e.dataTransfer.files;
-            updateFileInfo();
-        });
-        
-        function updateFileInfo() {
-            if (evidenceFiles.files.length > 0) {
-                let validFiles = Array.from(evidenceFiles.files).filter(file => file.size <= MAX_FILE_SIZE);
-                
-                if (validFiles.length !== evidenceFiles.files.length) {
-                    alert('Some files exceed the 5MB limit and were removed');
-                    evidenceFiles.files = new FileListItems(validFiles);
-                }
-                
-                fileInfo.textContent = `${evidenceFiles.files.length} file(s) selected`;
-            } else {
-                fileInfo.textContent = 'No files selected';
-            }
-        }
-        
-        // Map Implementation
-        let map, marker;
-        
-        function initMap() {
-            map = L.map('map', {
-                center: [0.0236, 37.9062],
-                zoom: 6,
-                preferCanvas: true
-            });
-            
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(map);
-            
-            marker = L.marker([0.0236, 37.9062], {
-                draggable: true,
-                icon: L.divIcon({ className: 'map-marker', iconSize: [24, 24] })
-            }).addTo(map);
-            
-            marker.on('dragend', updateLocation);
-            map.on('click', (e) => {
-                marker.setLatLng(e.latlng);
-                updateLocation();
-            });
-            
+        // Update location on marker move
+        marker.on('dragend', updateLocation);
+        map.on('click', e => {
+            marker.setLatLng(e.latlng);
             updateLocation();
-        }
+        });
         
         function updateLocation() {
-            const { lat, lng } = marker.getLatLng();
+            const {lat, lng} = marker.getLatLng();
             document.getElementById('latitude').value = lat;
             document.getElementById('longitude').value = lng;
-            document.getElementById('location').value = `Latitude: ${lat.toFixed(4)}, Longitude: ${lng.toFixed(4)}`;
-            
-            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.address) {
-                        const addressParts = [
-                            data.address.road,
-                            data.address.suburb,
-                            data.address.city,
-                            data.address.county,
-                            data.address.country
-                        ].filter(Boolean);
-                        document.getElementById('location').value = addressParts.join(', ');
-                    }
-                })
-                .catch(() => {
-                    // Silently fail if reverse geocoding doesn't work
-                });
+            document.getElementById('location').value = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
         }
         
-        // Form Submission
-        document.getElementById('corruptionReportForm').addEventListener('submit', async function(e) {
+        // File upload handling
+        document.getElementById('fileUploadArea').addEventListener('click', () => {
+            document.getElementById('evidenceFiles').click();
+        });
+        
+        // Form submission
+        document.getElementById('reportForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const btn = e.target.querySelector('button');
+            btn.disabled = true;
             
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const originalBtnText = submitBtn.innerHTML;
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
-            
-            // Validate date format
-            const dateInput = document.getElementById('dateOccurred');
-            if (!dateInput.value) {
-                alert('Please select a valid date');
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalBtnText;
-                return;
-            }
-            
-            // Prepare form data
             const formData = new FormData();
-            const formFields = {
-                corruptionType: document.getElementById('corruptionType').value,
-                description: document.getElementById('description').value,
-                location: document.getElementById('location').value,
-                latitude: document.getElementById('latitude').value,
-                longitude: document.getElementById('longitude').value,
-                dateOccurred: dateInput.value,
-                involvedParties: document.getElementById('involvedParties').value
-            };
+            formData.append('corruptionType', document.getElementById('corruptionType').value);
+            formData.append('description', document.getElementById('description').value);
+            formData.append('location', document.getElementById('location').value);
+            formData.append('latitude', document.getElementById('latitude').value);
+            formData.append('longitude', document.getElementById('longitude').value);
+            formData.append('dateOccurred', document.getElementById('dateOccurred').value);
             
-            // Add form fields
-            Object.entries(formFields).forEach(([key, value]) => {
-                formData.append(key, value);
-            });
-            
-            // Add files if any
-            const files = evidenceFiles.files;
+            const files = document.getElementById('evidenceFiles').files;
             for (let i = 0; i < files.length; i++) {
+                if (files[i].size > 5 * 1024 * 1024) {
+                    alert('File too large: ' + files[i].name);
+                    btn.disabled = false;
+                    return;
+                }
                 formData.append('evidenceFiles', files[i]);
             }
             
@@ -419,38 +151,15 @@
                     body: formData
                 });
                 
+                if (!response.ok) throw new Error('Submission failed');
                 const result = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(result.error || result.message || 'Submission failed');
-                }
-                
-                // Success case
-                alert(`Report submitted successfully! Reference ID: ${result.id}`);
-                this.reset();
-                fileInfo.textContent = 'No files selected';
-                marker.setLatLng([0.0236, 37.9062]);
-                map.setView([0.0236, 37.9062], 6);
-                
+                alert('Report submitted! ID: ' + result.id);
+                e.target.reset();
             } catch (err) {
-                console.error('Submission error:', err);
-                let errorMessage = err.message;
-                
-                if (errorMessage.includes('Failed to fetch')) {
-                    errorMessage = 'Network connection failed. Please check your internet connection.';
-                }
-                
-                alert(`Submission failed: ${errorMessage}\n\nFor assistance, contact support@corruptionwatchkenya.org`);
+                alert('Error: ' + err.message);
             } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalBtnText;
+                btn.disabled = false;
             }
-        });
-        
-        // Initialize Map when DOM is loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            initMap();
-            document.getElementById('currentYear').textContent = new Date().getFullYear();
         });
     </script>
 </body>
