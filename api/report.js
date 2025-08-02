@@ -20,9 +20,9 @@ const files = req.files?.evidenceFiles || []; // Assuming you're using multer or
       location,
       latitude: parseFloat(latitude),
       longitude: parseFloat(longitude),
+      evidence_files: filePaths,
       date_occurred: dateOccurred,
       involved_parties: involvedParties, // Note: Fix the typo (Parties vs Partes)
-      attachments: files.map(file => file.path) // Store file paths if you save them
     }
       ]);
 
