@@ -380,7 +380,7 @@ document.getElementById('corruptionReportForm').addEventListener('submit', async
         
         const response = await fetch('/api/report', {
             method: 'POST',
-            body: apiFormData
+            body: FormData
         });
 
         // Clone the response to read it multiple times if needed
@@ -389,13 +389,13 @@ document.getElementById('corruptionReportForm').addEventListener('submit', async
         // First try to parse as JSON
         try {
             const result = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(result.error || result.message || `Server error: ${response.status}`);
-            }
-            
-            // Success case
-            alert(`Report submitted successfully! Your reference number is ${result.referenceId || result.id || 'N/A'}`);
+
+if (!response.ok) {
+  throw new Error(result.error || 'Submission failed');
+}
+
+// Update this to match what your API actually returns
+alert(`Report submitted successfully! Reference ID: ${result.id}`);
             this.reset();
             fileInfo.textContent = 'No files selected';
             marker.setLatLng([0.0236, 37.9062]);
@@ -437,5 +437,6 @@ document.getElementById('corruptionReportForm').addEventListener('submit', async
 </script>
 </body>
 </html>
+
 
 
