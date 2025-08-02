@@ -188,6 +188,16 @@
             border-radius: 50%;
             border: 2px solid white;
         }
+
+        /* Loading spinner */
+        .fa-spinner {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -235,23 +245,23 @@
                 </div>
                 
                 <div class="form-group">
-                    <label>Evidence Upload</label>
+                    <label>Evidence Upload (Max 5MB each)</label>
                     <div class="file-upload" id="fileUploadArea">
                         <i class="fas fa-cloud-upload-alt"></i>
                         <p>Drag and drop files here or click to browse</p>
-                        <input type="file" id="evidenceFiles" name="evidenceFiles" multiple>
+                        <input type="file" id="evidenceFiles" name="evidenceFiles" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx">
                         <div class="file-info" id="fileInfo">No files selected</div>
                     </div>
                 </div>
                 
                 <div class="form-group">
                     <label for="dateOccurred">Date Occurred</label>
-                    <input type="date" class="form-control" id="dateOccurred" name="dateOccurred" pattern="\d{4}-\d{2}-\d{2}" required>
+                    <input type="date" class="form-control" id="dateOccurred" name="dateOccurred" required>
                 </div>
                 
                 <div class="form-group">
-                     <label for="involvedParties">Involved Parties</label>
-                     <input type="text" class="form-control" id="involvedParties" name="involvedParties">
+                    <label for="involvedParties">Involved Parties</label>
+                    <input type="text" class="form-control" id="involvedParties" name="involvedParties">
                 </div>
                 
                 <button type="submit" class="btn btn-block">
@@ -262,7 +272,7 @@
     </div>
     
     <footer>
-        <p>Corruption Watch Kenya &copy; 2023</p>
+        <p>Corruption Watch Kenya &copy; <span id="currentYear"></span></p>
         <p>In partnership with EACC and other anti-corruption agencies</p>
     </footer>
 
@@ -272,6 +282,7 @@
         const fileUploadArea = document.getElementById('fileUploadArea');
         const evidenceFiles = document.getElementById('evidenceFiles');
         const fileInfo = document.getElementById('fileInfo');
+        const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
         
         fileUploadArea.addEventListener('click', () => evidenceFiles.click());
         
@@ -295,6 +306,13 @@
         
         function updateFileInfo() {
             if (evidenceFiles.files.length > 0) {
+                let validFiles = Array.from(evidenceFiles.files).filter(file => file.size <= MAX_FILE_SIZE);
+                
+                if (validFiles.length !== evidenceFiles.files.length) {
+                    alert('Some files exceed the 5MB limit and were removed');
+                    evidenceFiles.files = new FileListItems(validFiles);
+                }
+                
                 fileInfo.textContent = `${evidenceFiles.files.length} file(s) selected`;
             } else {
                 fileInfo.textContent = 'No files selected';
@@ -348,97 +366,92 @@
                         ].filter(Boolean);
                         document.getElementById('location').value = addressParts.join(', ');
                     }
+                })
+                .catch(() => {
+                    // Silently fail if reverse geocoding doesn't work
                 });
         }
         
-       // Updated Form Submission with Proper Response Handling
-document.getElementById('corruptionReportForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const submitBtn = e.target.querySelector('button[type="submit"]');
-    const originalBtnText = submitBtn.innerHTML;
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
-
-    const formData = new FormData(this);
-    const files = document.getElementById('evidenceFiles').files;
-    
-    try {
-        const apiFormData = new FormData();
-        
-        // Append all form fields
-        for (const [key, value] of formData.entries()) {
-            if (key !== 'evidenceFiles') {
-                apiFormData.append(key, value);
+        // Form Submission
+        document.getElementById('corruptionReportForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            
+            // Validate date format
+            const dateInput = document.getElementById('dateOccurred');
+            if (!dateInput.value) {
+                alert('Please select a valid date');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+                return;
             }
-        }
-        
-        // Append files if any
-        for (let i = 0; i < files.length; i++) {
-            apiFormData.append('evidenceFiles', files[i]);
-        }
-        
-        const response = await fetch('/api/report', {
-            method: 'POST',
-            body: FormData
+            
+            // Prepare form data
+            const formData = new FormData();
+            const formFields = {
+                corruptionType: document.getElementById('corruptionType').value,
+                description: document.getElementById('description').value,
+                location: document.getElementById('location').value,
+                latitude: document.getElementById('latitude').value,
+                longitude: document.getElementById('longitude').value,
+                dateOccurred: dateInput.value,
+                involvedParties: document.getElementById('involvedParties').value
+            };
+            
+            // Add form fields
+            Object.entries(formFields).forEach(([key, value]) => {
+                formData.append(key, value);
+            });
+            
+            // Add files if any
+            const files = evidenceFiles.files;
+            for (let i = 0; i < files.length; i++) {
+                formData.append('evidenceFiles', files[i]);
+            }
+            
+            try {
+                const response = await fetch('/api/report', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || result.message || 'Submission failed');
+                }
+                
+                // Success case
+                alert(`Report submitted successfully! Reference ID: ${result.id}`);
+                this.reset();
+                fileInfo.textContent = 'No files selected';
+                marker.setLatLng([0.0236, 37.9062]);
+                map.setView([0.0236, 37.9062], 6);
+                
+            } catch (err) {
+                console.error('Submission error:', err);
+                let errorMessage = err.message;
+                
+                if (errorMessage.includes('Failed to fetch')) {
+                    errorMessage = 'Network connection failed. Please check your internet connection.';
+                }
+                
+                alert(`Submission failed: ${errorMessage}\n\nFor assistance, contact support@corruptionwatchkenya.org`);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            }
         });
-
-        // Clone the response to read it multiple times if needed
-        const responseClone = response.clone();
         
-        // First try to parse as JSON
-        try {
-            const result = await response.json();
-
-if (!response.ok) {
-  throw new Error(result.error || 'Submission failed');
-}
-
-// Update this to match what your API actually returns
-alert(`Report submitted successfully! Reference ID: ${result.id}`);
-            this.reset();
-            fileInfo.textContent = 'No files selected';
-            marker.setLatLng([0.0236, 37.9062]);
-            map.setView([0.0236, 37.9062], 6);
-            return;
-        } catch (jsonError) {
-            console.log('Not JSON response, trying text');
-        }
-
-        // If JSON parsing failed, try text
-        const text = await responseClone.text();
-        if (!response.ok) {
-            throw new Error(text || `Request failed with status ${response.status}`);
-        }
-        
-        // If we get here, it's a successful text response
-        alert(`Success! Server response: ${text.substring(0, 100)}`);
-        
-    } catch (err) {
-        console.error('Submission error:', err);
-        let errorMessage = err.message;
-        
-        // Handle common error cases
-        if (errorMessage.includes('A server error')) {
-            errorMessage = 'Our servers are currently experiencing issues. Please try again later.';
-        } else if (errorMessage.includes('NetworkError')) {
-            errorMessage = 'Network connection failed. Please check your internet connection.';
-        }
-        
-        alert(`Submission failed: ${errorMessage}\n\nFor assistance, contact support@corruptionwatchkenya.org`);
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalBtnText;
-    }
-});
-
-    // Initialize Map when DOM is loaded
-    document.addEventListener('DOMContentLoaded', initMap);
-</script>
+        // Initialize Map when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            initMap();
+            document.getElementById('currentYear').textContent = new Date().getFullYear();
+        });
+    </script>
 </body>
 </html>
-
-
-
-
-
