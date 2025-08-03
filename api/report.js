@@ -1,82 +1,48 @@
-import { createClient } from '@supabase/supabase-js'
-import { IncomingForm } from 'formidable';
-import { v4 as uuidv4 } from 'uuid';
+const express = require('express');
+const multer = require('multer');
+const cors = require('cors');
+const { createClient } = require('@supabase/supabase-js');
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
+const app = express();
+app.use(cors());
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+const upload = multer({ dest: 'uploads/' }); // Temporary storage
+const supabase = createClient(https://seskyvuvplritijwnjbw.supabase.co, eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlc2t5dnV2cGxyaXRpanduamJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwNzM4OTIsImV4cCI6MjA2OTY0OTg5Mn0.0O1EV1J7yfHPojaOI9j4F5uJb0Q1e5RnIqlhJv5LeCU);
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
+app.post('/api/report', upload.array('evidenceFiles'), async (req, res) => {
   try {
-    // Parse form data
-    const { fields, files } = await new Promise((resolve, reject) => {
-      const form = new IncomingForm();
-      form.parse(req, (err, fields, files) => {
-        if (err) reject(err);
-        resolve({ fields, files });
-      });
-    });
+    const {
+      corruptionType,
+      description,
+      location,
+      latitude,
+      longitude,
+      dateOccurred,
+      involvedParties
+    } = req.body;
 
-    // Validate required fields
-    const required = ['corruptionType', 'description', 'location', 'latitude', 'longitude', 'dateOccurred'];
-    if (required.some(field => !fields[field])) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
+    const filePaths = req.files.map(file => file.path); // Or custom upload logic
 
-    // Process files
-    const filePaths = [];
-    const fileList = files.evidenceFiles || [];
-    const filesToProcess = Array.isArray(fileList) ? fileList : [fileList];
-    
-    for (const file of filesToProcess) {
-      const ext = file.originalFilename.split('.').pop();
-      const path = `evidence/${uuidv4()}.${ext}`;
-      
-      const { error } = await supabase.storage
-        .from('reports')
-        .upload(path, file.filepath);
-      
-      if (error) throw error;
-      filePaths.push(path);
-    }
-
-    // Insert report
-    const { data, error } = await supabase
-      .from('corruption_reports')
-      .insert([{
-        corruption_type: fields.corruptionType,
-        description: fields.description,
-        location: fields.location,
-        latitude: parseFloat(fields.latitude),
-        longitude: parseFloat(fields.longitude),
+    const { data, error } = await supabase.from('corruption_reports').insert([
+      {
+        corruption_type: corruptionType,
+        description,
+        location,
+        latitude: parseFloat(latitude),
+        longitude: parseFloat(longitude),
         evidence_files: filePaths,
-        date_occurred: new Date(fields.dateOccurred).toISOString(),
-        created_at: new Date().toISOString()
-      }])
-      .select();
+        date_occurred: dateOccurred,
+        involved_parties: involvedParties
+      }
+    ]);
 
-    if (error) throw error;
+    if (error) return res.status(500).json({ error: error.message });
 
-    return res.status(201).json({ 
-      message: 'Report submitted', 
-      id: data[0].id 
-    });
-
+    res.status(200).json({ message: 'Report submitted successfully', id: data[0].id });
   } catch (err) {
-    console.error('Error:', err);
-    return res.status(500).json({ 
-      error: 'Server error: ' + err.message 
-    });
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
   }
-}
+});
+
+app.listen(3000, () => console.log('Server running on http://localhost:3000'));
