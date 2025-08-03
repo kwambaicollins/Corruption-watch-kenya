@@ -32,25 +32,36 @@ app.post('/api/report', upload.array('evidenceFiles'), async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        // Upload evidence files
+        // Validate files
+        if (req.files && req.files.length > 5) {
+            return res.status(400).json({ error: 'Maximum 5 files allowed' });
+        }
+
+        // Upload evidence files if any
         const fileUrls = [];
-        for (const file of req.files || []) {
-            const fileExt = path.extname(file.originalname);
-            const fileName = `${Date.now()}-${Math.floor(Math.random() * 1000)}${fileExt}`;
+        if (req.files && req.files.length > 0) {
+            for (const file of req.files) {
+                const fileExt = path.extname(file.originalname);
+                const fileName = `${Date.now()}-${Math.floor(Math.random() * 1000)}${fileExt}`;
 
-            const { error: uploadError } = await supabase.storage
-                .from('corruption-evidence') // your bucket
-                .upload(`evidence/${fileName}`, file.buffer, {
-                    contentType: file.mimetype
-                });
+                const { error: uploadError } = await supabase.storage
+                    .from('corruption-evidence')
+                    .upload(`evidence/${fileName}`, file.buffer, {
+                        contentType: file.mimetype,
+                        upsert: false
+                    });
 
-            if (uploadError) throw uploadError;
+                if (uploadError) {
+                    console.error('File upload error:', uploadError);
+                    throw new Error('Failed to upload evidence files');
+                }
 
-            const { data: { publicUrl } } = supabase.storage
-                .from('corruption-evidence')
-                .getPublicUrl(`evidence/${fileName}`);
+                const { data: { publicUrl } } = supabase.storage
+                    .from('corruption-evidence')
+                    .getPublicUrl(`evidence/${fileName}`);
 
-            fileUrls.push(publicUrl);
+                fileUrls.push(publicUrl);
+            }
         }
 
         // Insert report record
@@ -63,11 +74,15 @@ app.post('/api/report', upload.array('evidenceFiles'), async (req, res) => {
                 latitude: parseFloat(latitude),
                 longitude: parseFloat(longitude),
                 evidence_files: fileUrls,
-                date_occurred: dateOccurred
+                date_occurred: dateOccurred,
+                status: 'pending' // consider adding a status field
             }])
             .select();
 
-        if (insertError) throw insertError;
+        if (insertError) {
+            console.error('Insert error:', insertError);
+            throw insertError;
+        }
 
         res.status(200).json({
             message: 'Report submitted successfully',
@@ -81,5 +96,3 @@ app.post('/api/report', upload.array('evidenceFiles'), async (req, res) => {
         });
     }
 });
-
-app.listen(3000, () => console.log('✅ Server running on http://localhost:3000'));
