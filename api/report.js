@@ -1,37 +1,58 @@
-require('dotenv').config();
-const express = require('express');
 const multer = require('multer');
-const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
 
-const app = express();
-
-// Enhanced CORS configuration
-app.use(cors());
-
-// Body parsing middleware
-app.use(express.json({ limit: '20mb' }));
-app.use(express.urlencoded({ extended: true, limit: '20mb' }));
-
-// Multer configuration
+// Multer configuration for memory storage
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 5 * 1024 * 1024,
+    fileSize: 5 * 1024 * 1024, // 5MB
     files: 5
   }
 });
 
-// Supabase client
+// Initialize Supabase client with environment variables
 const supabase = createClient(
-    'https://seskyvuvplritijwnjbw.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlc2t5dnV2cGxyaXRpanduamJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwNzM4OTIsImV4cCI6MjA2OTY0OTg5Mn0.0O1EV1J7yfHPojaOI9j4F5uJb0Q1e5RnIqlhJv5LeCU'
+  process.env.SUPABASE_URL || 'https://seskyvuvplritijwnjbw.supabase.co',
+  process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlc2t5dnV2cGxyaXRpanduamJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwNzM4OTIsImV4cCI6MjA2OTY0OTg5Mn0.0O1EV1J7yfHPojaOI9j4F5uJb0Q1e5RnIqlhJv5LeCU'
 );
 
-// API endpoint
-app.post('/api/report', upload.array('evidenceFiles', 5), async (req, res) => {
-  try {
+// Helper function to parse multipart form data
+function parseMultipartData(req) {
+  return new Promise((resolve, reject) => {
+    const uploadHandler = upload.array('evidenceFiles', 5);
+    uploadHandler(req, {}, (error) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
+// Main handler function for Vercel
+export default async function handler(req, res) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
+  // Only allow POST requests
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+    // Parse multipart form data
+    await parseMultipartData(req);
+
     // Validate required fields
     const requiredFields = ['corruptionType', 'description', 'latitude', 'longitude', 'dateOccurred'];
     const missingFields = requiredFields.filter(field => !req.body[field]);
@@ -57,7 +78,10 @@ app.post('/api/report', upload.array('evidenceFiles', 5), async (req, res) => {
             upsert: false
           });
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error('File upload error:', uploadError);
+          throw new Error(`File upload failed: ${uploadError.message}`);
+        }
 
         const { data: { publicUrl } } = supabase.storage
           .from('corruption-evidence')
@@ -67,7 +91,7 @@ app.post('/api/report', upload.array('evidenceFiles', 5), async (req, res) => {
       }
     }
 
-    // Insert report
+    // Insert report into database
     const { data, error } = await supabase
       .from('corruption_reports')
       .insert([{
@@ -82,20 +106,22 @@ app.post('/api/report', upload.array('evidenceFiles', 5), async (req, res) => {
       }])
       .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Database error:', error);
+      throw new Error(`Database operation failed: ${error.message}`);
+    }
 
     return res.status(200).json({
       success: true,
-      id: data[0].id
+      id: data[0].id,
+      message: 'Report submitted successfully'
     });
 
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Handler error:', error);
     return res.status(500).json({
-      error: error.message || 'Internal server error'
+      error: error.message || 'Internal server error',
+      details: error.details || 'No additional details available'
     });
   }
-});
-
-// Export for Vercel
-module.exports = app;
+}
