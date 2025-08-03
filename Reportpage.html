@@ -121,46 +121,48 @@
             document.getElementById('evidenceFiles').click();
         });
         
-        // Form submission
-        document.getElementById('reportForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = e.target.querySelector('button');
-            btn.disabled = true;
-            
-            const formData = new FormData();
-            formData.append('corruptionType', document.getElementById('corruptionType').value);
-            formData.append('description', document.getElementById('description').value);
-            formData.append('location', document.getElementById('location').value);
-            formData.append('latitude', document.getElementById('latitude').value);
-            formData.append('longitude', document.getElementById('longitude').value);
-            formData.append('dateOccurred', document.getElementById('dateOccurred').value);
-            
-            const files = document.getElementById('evidenceFiles').files;
-            for (let i = 0; i < files.length; i++) {
-                if (files[i].size > 5 * 1024 * 1024) {
-                    alert('File too large: ' + files[i].name);
-                    btn.disabled = false;
-                    return;
-                }
-                formData.append('evidenceFiles', files[i]);
-            }
-            
-            try {
-                const response = await fetch('/api/report', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (!response.ok) throw new Error('Submission failed');
-                const result = await response.json();
-                alert('Report submitted! ID: ' + result.id);
-                e.target.reset();
-            } catch (err) {
-                alert('Error: ' + err.message);
-            } finally {
-                btn.disabled = false;
-            }
+       // Change the form submission handler to:
+document.getElementById('reportForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button');
+    btn.disabled = true;
+    
+    try {
+        const formData = new FormData();
+        formData.append('corruptionType', document.getElementById('corruptionType').value);
+        formData.append('description', document.getElementById('description').value);
+        formData.append('location', document.getElementById('location').value);
+        formData.append('latitude', document.getElementById('latitude').value);
+        formData.append('longitude', document.getElementById('longitude').value);
+        formData.append('dateOccurred', document.getElementById('dateOccurred').value);
+        
+        const files = document.getElementById('evidenceFiles').files;
+        for (let i = 0; i < files.length; i++) {
+            formData.append('evidenceFiles', files[i]);
+        }
+        
+        const response = await fetch('/api/report', {
+            method: 'POST',
+            body: formData
+            // Don't set Content-Type header - let the browser set it with boundary
         });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Submission failed');
+        }
+        
+        const result = await response.json();
+        alert('Report submitted! ID: ' + result.id);
+        e.target.reset();
+    } catch (err) {
+        alert('Error: ' + err.message);
+        console.error(err);
+    } finally {
+        btn.disabled = false;
+    }
+});
     </script>
 </body>
 </html>
+
