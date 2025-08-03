@@ -126,6 +126,7 @@ document.getElementById('reportForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('button');
     btn.disabled = true;
+    btn.textContent = 'Submitting...';
     
     try {
         const formData = new FormData();
@@ -144,27 +145,37 @@ document.getElementById('reportForm').addEventListener('submit', async (e) => {
         const response = await fetch('/api/report', {
             method: 'POST',
             body: formData
-            // Don't set Content-Type header - let the browser set it with boundary
         });
         
+        const responseText = await response.text();
+        
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Submission failed');
+            // Try to parse as JSON, fallback to raw text
+            try {
+                const errorData = JSON.parse(responseText);
+                throw new Error(errorData.error || 'Submission failed');
+            } catch {
+                throw new Error(responseText || 'Submission failed');
+            }
         }
         
-        const result = await response.json();
-alert('Report submitted! ID: ' + result.id);
-e.target.reset();
+        // Success case - parse the JSON
+        const result = JSON.parse(responseText);
+        alert('Report submitted successfully! ID: ' + result.id);
+        document.getElementById('reportForm').reset();
+        
     } catch (err) {
+        console.error('Submission error:', err);
         alert('Error: ' + err.message);
-        console.error(err);
     } finally {
         btn.disabled = false;
+        btn.textContent = 'Submit Report';
     }
 });
     </script>
 </body>
 </html>
+
 
 
 
