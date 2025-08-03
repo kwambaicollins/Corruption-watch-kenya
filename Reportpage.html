@@ -152,7 +152,8 @@ document.getElementById('reportForm').addEventListener('submit', async (e) => {
             throw new Error(errorData.error || 'Submission failed');
         }
         
-        const result = await response.json();
+        const text = await response.text();
+        throw new Error('Submission failed: ' + text);
         alert('Report submitted! ID: ' + result.id);
         e.target.reset();
     } catch (err) {
@@ -165,4 +166,5 @@ document.getElementById('reportForm').addEventListener('submit', async (e) => {
     </script>
 </body>
 </html>
+
 
