@@ -1,16 +1,8 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/report.js",
-      "use": "@vercel/node"
+  "functions": {
+    "api/report.js": {
+      "memory": 1024,
+      "maxDuration": 30
     }
-  ],
-  "routes": [
-    {
-      "src": "/api/report",
-      "dest": "/api/report",
-      "methods": ["POST"]
-    }
-  ]
+  }
 }
