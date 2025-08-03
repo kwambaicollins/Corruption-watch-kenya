@@ -83,7 +83,7 @@ app.post('/api/report', upload.array('evidenceFiles'), async (req, res) => {
             console.error('Insert error:', insertError);
             throw insertError;
         }
-
+        res.setHeader('Content-Type', 'application/json');
         res.status(200).json({
             message: 'Report submitted successfully',
             id: data[0].id
