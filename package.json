@@ -1,5 +1,5 @@
 {
-  "name": "corruption-reporting-app",
+  "name": "corruption_reports",
   "version": "1.0.0",
   "description": "Backend for corruption reporting system",
   "main": "report.js",
