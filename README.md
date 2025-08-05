@@ -44,7 +44,9 @@ A web-based anti-corruption reporting and transparency platform designed to empo
    - **Recommended**: Run `complete-setup.sql` (handles all issues)
    - Or use `supabase-setup-simple.sql` for basic setup
    - Or use `supabase-setup.sql` for more secure RLS-enabled setup
-   - If you encounter schema exposure errors, use `fix-schema-exposure.sql`
+               - If you encounter schema exposure errors, use `fix-postgrest-final.sql` (FINAL solution for PostgREST errors)
+        - Or use `fix-postgrest-exposure.sql` for basic PostgREST issues
+        - Or use `fix-schema-exposure.sql` for general schema issues
    - If you encounter column errors, use `fix-missing-column.sql` to add missing columns
    - Or use `check-table.sql` to completely recreate the table
    - Get your project URL and keys from Settings > API
