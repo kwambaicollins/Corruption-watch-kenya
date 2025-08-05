@@ -3,6 +3,10 @@
     "api/report.js": {
       "memory": 1024,
       "maxDuration": 30
+    },
+    "api/get-reports.js": {
+      "memory": 1024,
+      "maxDuration": 30
     }
   }
 }

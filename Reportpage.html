@@ -121,6 +121,23 @@
             document.getElementById('evidenceFiles').click();
         });
         
+        // Display selected files
+        document.getElementById('evidenceFiles').addEventListener('change', (e) => {
+            const fileArea = document.getElementById('fileUploadArea');
+            const files = e.target.files;
+            
+            if (files.length > 0) {
+                let fileList = '<p>Selected files:</p><ul>';
+                for (let i = 0; i < files.length; i++) {
+                    fileList += `<li>${files[i].name} (${(files[i].size / 1024 / 1024).toFixed(2)} MB)</li>`;
+                }
+                fileList += '</ul>';
+                fileArea.innerHTML = fileList;
+            } else {
+                fileArea.innerHTML = '<p>Click to select files</p>';
+            }
+        });
+        
        // Change the form submission handler to:
 document.getElementById('reportForm').addEventListener('submit', async (e) => {
     e.preventDefault();

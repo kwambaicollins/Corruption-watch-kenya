@@ -470,36 +470,32 @@
         
         // Update statistics cards
         function updateStats(stats) {
-            document.getElementById('totalReports').textContent = stats.totalReports.toLocaleString();
-            document.getElementById('investigating').textContent = stats.investigating.toLocaleString();
+            document.getElementById('totalReports').textContent = stats.total.toLocaleString();
+            document.getElementById('investigating').textContent = stats.underInvestigation.toLocaleString();
             document.getElementById('resolved').textContent = stats.resolved.toLocaleString();
-            document.getElementById('hotspots').textContent = stats.hotspots.toLocaleString();
+            document.getElementById('hotspots').textContent = stats.pending.toLocaleString();
         }
         
         // Update reports by type chart
         function updateTypeChart(typeData) {
             typeChart.data.labels = typeData.labels;
-            typeChart.data.datasets[0].data = typeData.values;
-            typeChart.data.datasets[0].backgroundColor = [
-                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'
-            ];
+            typeChart.data.datasets[0].data = typeData.data;
+            typeChart.data.datasets[0].backgroundColor = typeData.backgroundColor;
             typeChart.update();
         }
         
         // Update monthly trend chart
         function updateTrendChart(trendData) {
             trendChart.data.labels = trendData.labels;
-            trendChart.data.datasets[0].data = trendData.values;
+            trendChart.data.datasets[0].data = trendData.data;
             trendChart.update();
         }
         
         // Update status distribution chart
         function updateStatusChart(statusData) {
             statusChart.data.labels = statusData.labels;
-            statusChart.data.datasets[0].data = statusData.values;
-            statusChart.data.datasets[0].backgroundColor = [
-                '#FFF3CD', '#D1ECF1', '#D4EDDA'
-            ];
+            statusChart.data.datasets[0].data = statusData.data;
+            statusChart.data.datasets[0].backgroundColor = statusData.backgroundColor;
             statusChart.update();
         }
         
@@ -509,15 +505,14 @@
                 heatmap.removeLayer(window.heatmapLayer);
             }
             
-            window.heatmapLayer = L.heatLayer(
-                heatmapData.map(point => [point.lat, point.lng, point.intensity * 100]), 
-                {
+            if (heatmapData && heatmapData.length > 0) {
+                window.heatmapLayer = L.heatLayer(heatmapData, {
                     radius: 25,
                     blur: 15,
                     maxZoom: 17,
                     gradient: {0.4: 'blue', 0.6: 'lime', 0.8: 'yellow', 1.0: 'red'}
-                }
-            ).addTo(heatmap);
+                }).addTo(heatmap);
+            }
         }
         
         // Update recent reports table
@@ -534,7 +529,7 @@
                 let statusBadge;
                 if (report.status === 'pending') {
                     statusBadge = `<span class="status-badge status-pending">Pending</span>`;
-                } else if (report.status === 'investigating') {
+                } else if (report.status === 'under_investigation') {
                     statusBadge = `<span class="status-badge status-investigating">Investigating</span>`;
                 } else {
                     statusBadge = `<span class="status-badge status-resolved">Resolved</span>`;
@@ -546,11 +541,11 @@
                     : report.description;
                 
                 row.innerHTML = `
-                    <td>${report.caseId || 'CWK-' + report._id.substring(18, 24)}</td>
-                    <td>${report.corruptionType}</td>
+                    <td>CWK-${report.id || 'N/A'}</td>
+                    <td>${report.corruption_type}</td>
                     <td>${shortDescription}</td>
-                    <td>${report.location.text || 'N/A'}</td>
-                    <td>${new Date(report.createdAt).toLocaleDateString()}</td>
+                    <td>${report.location || 'N/A'}</td>
+                    <td>${new Date(report.created_at).toLocaleDateString()}</td>
                     <td>${statusBadge}</td>
                 `;
                 
