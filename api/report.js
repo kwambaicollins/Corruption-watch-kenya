@@ -69,16 +69,15 @@ app.post('/api/report', upload.array('evidenceFiles', 5), async (req, res) => {
 
     // Insert report
     const { data, error } = await supabase
-      .from('corruption_reports')
+      .from('app_private.corruption_reports')  // Update the schema reference
       .insert([{
         corruption_type: req.body.corruptionType,
         description: req.body.description,
         location: req.body.location,
         latitude: parseFloat(req.body.latitude),
         longitude: parseFloat(req.body.longitude),
-        evidence_files: fileUrls,
         date_occurred: req.body.dateOccurred,
-        status: 'pending'
+        evidence_files: fileUrls
       }])
       .select();
 
