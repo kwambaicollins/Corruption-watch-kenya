@@ -50,6 +50,21 @@
             text-align: center;
             margin: 10px 0;
         }
+        
+        #fileList {
+            margin-top: 10px;
+            text-align: left;
+        }
+        
+        #fileList ul {
+            margin: 5px 0;
+            padding-left: 20px;
+        }
+        
+        #fileList li {
+            margin: 2px 0;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
@@ -84,6 +99,7 @@
             <div class="file-upload" id="fileUploadArea">
                 <p>Click to select files</p>
                 <input type="file" id="evidenceFiles" multiple style="display: none">
+                <div id="fileList"></div>
             </div>
         </div>
         
@@ -123,7 +139,7 @@
         
         // Display selected files
         document.getElementById('evidenceFiles').addEventListener('change', (e) => {
-            const fileArea = document.getElementById('fileUploadArea');
+            const fileListDiv = document.getElementById('fileList');
             const files = e.target.files;
             
             if (files.length > 0) {
@@ -132,9 +148,9 @@
                     fileList += `<li>${files[i].name} (${(files[i].size / 1024 / 1024).toFixed(2)} MB)</li>`;
                 }
                 fileList += '</ul>';
-                fileArea.innerHTML = fileList;
+                fileListDiv.innerHTML = fileList;
             } else {
-                fileArea.innerHTML = '<p>Click to select files</p>';
+                fileListDiv.innerHTML = '';
             }
         });
         
@@ -154,9 +170,12 @@ document.getElementById('reportForm').addEventListener('submit', async (e) => {
         formData.append('longitude', document.getElementById('longitude').value);
         formData.append('dateOccurred', document.getElementById('dateOccurred').value);
         
-        const files = document.getElementById('evidenceFiles').files;
-        for (let i = 0; i < files.length; i++) {
-            formData.append('evidenceFiles', files[i]);
+        const evidenceFilesElement = document.getElementById('evidenceFiles');
+        if (evidenceFilesElement && evidenceFilesElement.files) {
+            const files = evidenceFilesElement.files;
+            for (let i = 0; i < files.length; i++) {
+                formData.append('evidenceFiles', files[i]);
+            }
         }
         
         const response = await fetch('/api/report', {
