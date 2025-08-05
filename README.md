@@ -38,10 +38,17 @@ A web-based anti-corruption reporting and transparency platform designed to empo
 
 1. Clone the repository
 2. Install dependencies: `npm install`
-3. Set up environment variables (optional):
+3. Set up Supabase:
+   - Create a new Supabase project
+   - Go to SQL Editor in your Supabase dashboard
+   - Run the SQL commands from `supabase-setup-simple.sql` (recommended for quick setup)
+   - Or use `supabase-setup.sql` for more secure RLS-enabled setup
+   - Get your project URL and keys from Settings > API
+4. Set up environment variables (optional):
    - `SUPABASE_URL`: Your Supabase project URL
    - `SUPABASE_ANON_KEY`: Your Supabase anonymous key
-4. Deploy to Vercel or run locally
+   - `SUPABASE_SERVICE_ROLE_KEY`: Your Supabase service role key (recommended)
+5. Deploy to Vercel or run locally
 
 ## Live Demo
 
