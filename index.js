@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Close menu when clicking outside
     document.addEventListener('click', (e) => {
-      if (state.isMenuOpen && !dom.navPopup.contains(e.target) {
+      if (state.isMenuOpen && !dom.navPopup.contains(e.target)) {
         closeNavigation();
       }
     });
