@@ -56,6 +56,18 @@ A web-based anti-corruption reporting and transparency platform designed to empo
    - `SUPABASE_SERVICE_ROLE_KEY`: Your Supabase service role key (recommended)
 5. Deploy to Vercel or run locally
 
+## Deploying to GitHub Pages or Static Hosting
+
+- **index.html** and **Reportpage.html** work out-of-the-box as static files. All scripts must use explicit version numbers (no wildcards) and be loaded before your custom code.
+- **Dashboard.html** will NOT show live analytics on GitHub Pages unless you refactor it to fetch data directly from Firebase (not from `/api` endpoints). GitHub Pages does not support serverless functions or backend APIs.
+- If you want dashboard analytics on GitHub Pages, update Dashboard.html to use the Firebase client SDK to fetch and display data.
+- All backend/serverless API endpoints (in `/api`) require a platform like Vercel, Netlify, or your own Node.js server.
+
+**Tips for static hosting:**
+- Always use full version numbers in your `<script src=...>` tags (e.g., `firebasejs/10.12.2/...`).
+- Place all library scripts before your custom scripts.
+- Test your site after deployment and check the browser console for any missing scripts or errors.
+
 ## Live Demo
 
 Visit: https://corruption-watch-kenya-lws6-gvkk6ay3t.vercel.app/
