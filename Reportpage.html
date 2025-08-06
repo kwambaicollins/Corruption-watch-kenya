@@ -134,9 +134,14 @@
         firebase.initializeApp(firebaseConfig);
 
         // Initialize map
-        const map = L.map('map').setView([0.0236, 37.9062], 6);
+        const defaultLat = 0.0236;
+        const defaultLng = 37.9062;
+        const map = L.map('map').setView([defaultLat, defaultLng], 6);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        const marker = L.marker(map.getCenter(), {draggable: true}).addTo(map);
+        const marker = L.marker([defaultLat, defaultLng], {draggable: true}).addTo(map);
+        
+        // Set initial location fields
+        setLocationFields(defaultLat, defaultLng);
         
         // Update location on marker move
         marker.on('dragend', updateLocation);
@@ -147,10 +152,17 @@
         
         function updateLocation() {
             const {lat, lng} = marker.getLatLng();
+            setLocationFields(lat, lng);
+        }
+        
+        function setLocationFields(lat, lng) {
             document.getElementById('latitude').value = lat;
             document.getElementById('longitude').value = lng;
             document.getElementById('location').value = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
         }
+        
+        // Set date field to today by default
+        document.getElementById('dateOccurred').value = new Date().toISOString().split('T')[0];
         
         // File upload handling
         document.getElementById('fileUploadArea').addEventListener('click', () => {
@@ -217,6 +229,12 @@
                 alert('Report submitted successfully! ID: ' + newReportRef.key);
                 document.getElementById('reportForm').reset();
                 document.getElementById('fileList').innerHTML = '';
+                // Reset map and location fields to default
+                marker.setLatLng([defaultLat, defaultLng]);
+                map.setView([defaultLat, defaultLng], 6);
+                setLocationFields(defaultLat, defaultLng);
+                // Reset date field to today
+                document.getElementById('dateOccurred').value = new Date().toISOString().split('T')[0];
                 
             } catch (err) {
                 console.error('Submission error:', err);
