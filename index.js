@@ -1,104 +1,144 @@
-/**
- * Corruption Watch Kenya - Main JavaScript File
- * Handles navigation, UI interactions, and core functionality
- */
+// Configuration
+const CONFIG = {
+  firebase: {
+    apiKey: "AIzaSyD7NFb1hFX3VFzfbJ0UmY-mDby-6w3MYuk",
+    authDomain: "corruption-watch-kenya.firebaseapp.com",
+    databaseURL: "https://corruption-watch-kenya-default-rtdb.firebaseio.com",
+    projectId: "corruption-watch-kenya",
+    storageBucket: "corruption-watch-kenya.appspot.com",
+    messagingSenderId: "1032330075769",
+    appId: "1:1032330075769:web:6e5f0d984d95cec8c5bea8"
+  },
+  map: {
+    defaultLat: 0.0236,
+    defaultLng: 37.9062,
+    defaultZoom: 6
+  }
+};
 
-document.addEventListener('DOMContentLoaded', () => {
-  // DOM Elements
-  const dom = {
-    navToggle: document.querySelector('.nav-toggle'),
-    navPopup: document.getElementById('navPopup'),
-    navLinks: document.querySelectorAll('.nav-popup a'),
-    body: document.body,
-    heroBtn: document.querySelector('.hero .btn'),
-    learnMoreBtn: document.querySelector('.btn-outline')
-  };
+// Initialize Firebase
+function initializeFirebase() {
+  try {
+    firebase.initializeApp(CONFIG.firebase);
+    return firebase.database();
+  } catch (error) {
+    console.error("Firebase initialization error:", error);
+    throw new Error("Failed to initialize database");
+  }
+}
 
-  // State management
-  const state = {
-    isMenuOpen: false
-  };
+// Initialize Map
+function initializeMap() {
+  const map = L.map('map').setView(
+    [CONFIG.map.defaultLat, CONFIG.map.defaultLng], 
+    CONFIG.map.defaultZoom
+  );
 
-  // Initialize the application
-  function init() {
-    setupEventListeners();
-    checkForHeroImage();
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+  
+  const marker = L.marker(
+    [CONFIG.map.defaultLat, CONFIG.map.defaultLng], 
+    { draggable: true }
+  ).addTo(map);
+
+  return { map, marker };
+}
+
+// Form Handling
+function setupForm(db, marker) {
+  const form = document.getElementById('reportForm');
+  const submitBtn = document.getElementById('submitBtn');
+
+  // Set default date
+  document.getElementById('dateOccurred').valueAsDate = new Date();
+
+  // Form validation
+  function validateForm() {
+    const isValid = [
+      document.getElementById('corruptionType').value,
+      document.getElementById('description').value,
+      document.getElementById('latitude').value,
+      document.getElementById('longitude').value,
+      document.getElementById('dateOccurred').value
+    ].every(Boolean);
+    
+    submitBtn.disabled = !isValid;
   }
 
-  // Set up all event listeners
-  function setupEventListeners() {
-    // Navigation toggle
-    if (dom.navToggle) {
-      dom.navToggle.addEventListener('click', toggleNavigation);
-    }
+  // Location handling
+  function updateLocation(lat, lng) {
+    document.getElementById('latitude').value = lat;
+    document.getElementById('longitude').value = lng;
+    document.getElementById('location').value = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+    validateForm();
+  }
 
-    // Close menu when clicking on nav links
-    if (dom.navLinks.length > 0) {
-      dom.navLinks.forEach(link => {
-        link.addEventListener('click', closeNavigation);
-      });
-    }
+  // Form submission
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Submitting...";
 
-    // Close menu when clicking outside
-    document.addEventListener('click', (e) => {
-      if (state.isMenuOpen && !dom.navPopup.contains(e.target)) {
-        closeNavigation();
-      }
+    try {
+      const reportData = {
+        type: document.getElementById('corruptionType').value,
+        description: document.getElementById('description').value,
+        location: document.getElementById('location').value,
+        latitude: parseFloat(document.getElementById('latitude').value),
+        longitude: parseFloat(document.getElementById('longitude').value),
+        date: document.getElementById('dateOccurred').value,
+        timestamp: firebase.database.ServerValue.TIMESTAMP,
+        status: "pending"
+      };
+
+      const ref = await db.ref('reports').push(reportData);
+      alert(`Report submitted! ID: ${ref.key}`);
+      form.reset();
+      marker.setLatLng([CONFIG.map.defaultLat, CONFIG.map.defaultLng]);
+      
+    } catch (error) {
+      console.error("Submission error:", error);
+      alert("Error submitting report");
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalText;
+    }
+  });
+
+  // Add event listeners
+  [...form.elements].forEach(element => {
+    element.addEventListener('input', validateForm);
+  });
+}
+
+// Main initialization
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const db = initializeFirebase();
+    const { map, marker } = initializeMap();
+    
+    // Map events
+    marker.on('dragend', () => {
+      const { lat, lng } = marker.getLatLng();
+      updateLocation(lat, lng);
     });
 
-    // Hero button analytics (example)
-    if (dom.heroBtn) {
-      dom.heroBtn.addEventListener('click', () => {
-        console.log('Report button clicked');
-        // Add analytics tracking here
-      });
-    }
+    map.on('click', (e) => {
+      marker.setLatLng(e.latlng);
+      updateLocation(e.latlng.lat, e.latlng.lng);
+    });
 
-    // Learn more button smooth scroll
-    if (dom.learnMoreBtn) {
-      dom.learnMoreBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.querySelector('#learn').scrollIntoView({
-          behavior: 'smooth'
-        });
-      });
-    }
-  }
-
-  // Toggle navigation menu
-  function toggleNavigation(e) {
-    e.stopPropagation();
-    state.isMenuOpen = !state.isMenuOpen;
+    setupForm(db, marker);
     
-    if (state.isMenuOpen) {
-      dom.navPopup.classList.add('show');
-      dom.body.classList.add('nav-open');
-    } else {
-      closeNavigation();
-    }
-  }
+    // Hide loading screen
+    document.getElementById('loadingOverlay').style.display = 'none';
+    document.getElementById('mainContent').classList.remove('hidden');
 
-  // Close navigation menu
-  function closeNavigation() {
-    dom.navPopup.classList.remove('show');
-    dom.body.classList.remove('nav-open');
-    state.isMenuOpen = false;
+  } catch (error) {
+    console.error("Initialization error:", error);
+    document.getElementById('loadingMessage').textContent = error.message;
+    document.getElementById('retryButton').classList.remove('hidden');
   }
-
-  // Check if hero image loaded successfully
-  function checkForHeroImage() {
-    const hero = document.querySelector('.hero');
-    if (hero) {
-      const img = new Image();
-      img.src = 'img/kenya-bg.jpg';
-      
-      img.onerror = () => {
-        hero.style.background = `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), var(--primary-color)`;
-        console.warn('Hero image failed to load, using fallback background');
-      };
-    }
-  }
-
-  // Initialize the app
-  init();
 });
