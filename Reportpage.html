@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Report Corruption</title>
-    <link href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" rel="stylesheet">
-    <style>
+  <title>Report Corruption</title>
+  <!-- Load CSS first -->
+  <link href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" rel="stylesheet">
+  <style>
         body {
             font-family: Arial, sans-serif;
             line-height: 1.6;
@@ -64,8 +65,8 @@
 </head>
 <body>
     <h1>Report Corruption Case</h1>
-  <form id="reportForm" novalidate>
-    <div class="error-message" id="formError" style="display:none;"></div>
+    <form id="reportForm" novalidate>
+        <div class="error-message" id="formError" style="display:none;"></div>
         <div class="form-group">
             <label for="corruptionType">Type of Corruption</label>
       <select id="corruptionType" name="corruptionType" required>
@@ -93,125 +94,158 @@
         </div>
     <button type="submit" id="submitBtn" disabled>Submit Report</button>
     </form>
-  <!-- Firebase and Leaflet libraries: load FIRST -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"></script>
-  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-    <!-- Custom script: load LAST -->
+
+    <!-- Update library loading order and add type="module" -->
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
     <script>
-    function showError(msg) {
-      const errDiv = document.getElementById('formError');
-      errDiv.textContent = msg;
-      errDiv.style.display = 'block';
-    }
-    function clearError() {
-      const errDiv = document.getElementById('formError');
-      errDiv.textContent = '';
-      errDiv.style.display = 'none';
-    }
-    if (!window.firebase || !window.L) {
-      showError('Critical error: Required libraries failed to load. Please refresh or try again later.');
-    } else {
-      document.addEventListener('DOMContentLoaded', () => {
-        // Firebase Config
-        const firebaseConfig = {
-          apiKey: "AIzaSyD7NFb1hFX3VFzfbJ0UmY-mDby-6w3MYuk",
-          authDomain: "corruption-watch-kenya.firebaseapp.com",
-          databaseURL: "https://corruption-watch-kenya-default-rtdb.firebaseio.com",
-          projectId: "corruption-watch-kenya",
-          storageBucket: "corruption-watch-kenya.appspot.com",
-          messagingSenderId: "1032330075769",
-          appId: "1:1032330075769:web:6e5f0d984d95cec8c5bea8",
-          measurementId: "G-TZJZCMY0ME"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        // Map Setup
-        const defaultLat = 0.0236, defaultLng = 37.9062;
-        const map = L.map('map').setView([defaultLat, defaultLng], 6);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        const marker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(map);
-        marker.bindPopup(`Lat: ${defaultLat}, Lng: ${defaultLng}`).openPopup();
-        setLocationFields(defaultLat, defaultLng);
-        marker.on('dragend', () => {
-          const { lat, lng } = marker.getLatLng();
-          marker.setPopupContent(`Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`).openPopup();
-          setLocationFields(lat, lng);
-          validateForm();
-        });
-        map.on('click', (e) => {
-          marker.setLatLng(e.latlng);
-          const { lat, lng } = e.latlng;
-          marker.setPopupContent(`Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`).openPopup();
-          setLocationFields(lat, lng);
-          validateForm();
-        });
-        function setLocationFields(lat, lng) {
-          document.getElementById('latitude').value = lat;
-          document.getElementById('longitude').value = lng;
-          document.getElementById('location').value = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
-        }
-        document.getElementById('dateOccurred').value = new Date().toISOString().split('T')[0];
-        // Enable submit only if all required fields are filled
-        const requiredFields = [
-          'corruptionType', 'description', 'latitude', 'longitude', 'dateOccurred'
-        ];
-        function validateForm() {
-          let valid = true;
-          for (const id of requiredFields) {
-            const el = document.getElementById(id);
-            if (!el.value || (el.type === 'select-one' && el.selectedIndex === 0)) {
-              valid = false;
-              break;
+        // Wait for all libraries to load
+        window.addEventListener('load', function() {
+            if (typeof firebase === 'undefined') {
+                showError('Firebase library failed to load. Please check your internet connection and refresh.');
+                return;
             }
-          }
-          document.getElementById('submitBtn').disabled = !valid;
-        }
-        requiredFields.forEach(id => {
-          document.getElementById(id).addEventListener('input', validateForm);
-        });
-        validateForm();
-        // Form submit handler
-        document.getElementById('reportForm').addEventListener('submit', async (e) => {
-          e.preventDefault();
-          clearError();
-          const btn = document.getElementById('submitBtn');
-          btn.disabled = true;
-          btn.textContent = 'Submitting...';
-          try {
-            const reportData = {
-              corruption_type: document.getElementById('corruptionType').value,
-              description: document.getElementById('description').value,
-              location: document.getElementById('location').value,
-              latitude: parseFloat(document.getElementById('latitude').value),
-              longitude: parseFloat(document.getElementById('longitude').value),
-              date_occurred: document.getElementById('dateOccurred').value,
-              created_at: new Date().toISOString(),
-              status: 'pending'
+            if (typeof L === 'undefined') {
+                showError('Map library failed to load. Please check your internet connection and refresh.');
+                return;
+            }
+
+            // Firebase Config
+            const firebaseConfig = {
+                apiKey: "AIzaSyD7NFb1hFX3VFzfbJ0UmY-mDby-6w3MYuk",
+                authDomain: "corruption-watch-kenya.firebaseapp.com",
+                databaseURL: "https://corruption-watch-kenya-default-rtdb.firebaseio.com",
+                projectId: "corruption-watch-kenya",
+                storageBucket: "corruption-watch-kenya.appspot.com",
+                messagingSenderId: "1032330075769",
+                appId: "1:1032330075769:web:6e5f0d984d95cec8c5bea8",
+                measurementId: "G-TZJZCMY0ME"
             };
-            const newReportRef = db.ref('reports').push();
-            await newReportRef.set(reportData);
-            alert('Report submitted successfully! Reference ID: ' + newReportRef.key);
-            document.getElementById('reportForm').reset();
-            marker.setLatLng([defaultLat, defaultLng]);
-            map.setView([defaultLat, defaultLng], 6);
-            setLocationFields(defaultLat, defaultLng);
-            document.getElementById('dateOccurred').value = new Date().toISOString().split('T')[0];
-            validateForm();
-          } catch (err) {
-            console.error('Submission error:', err);
-            showError('Error: ' + err.message);
-          } finally {
-            btn.disabled = false;
-            btn.textContent = 'Submit Report';
-          }
+
+            try {
+                // Initialize Firebase
+                firebase.initializeApp(firebaseConfig);
+                const db = firebase.database();
+
+                function showError(msg) {
+                    const errDiv = document.getElementById('formError');
+                    errDiv.textContent = msg;
+                    errDiv.style.display = 'block';
+                }
+
+                function clearError() {
+                    const errDiv = document.getElementById('formError');
+                    errDiv.textContent = '';
+                    errDiv.style.display = 'none';
+                }
+
+                // Map Setup
+                const defaultLat = 0.0236, defaultLng = 37.9062;
+                const map = L.map('map').setView([defaultLat, defaultLng], 6);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                const marker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(map);
+                
+                // Initialize map marker
+                marker.bindPopup(`Lat: ${defaultLat}, Lng: ${defaultLng}`).openPopup();
+                setLocationFields(defaultLat, defaultLng);
+
+                // Map event handlers
+                marker.on('dragend', () => {
+                    const { lat, lng } = marker.getLatLng();
+                    marker.setPopupContent(`Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`).openPopup();
+                    setLocationFields(lat, lng);
+                    validateForm();
+                });
+
+                map.on('click', (e) => {
+                    marker.setLatLng(e.latlng);
+                    const { lat, lng } = e.latlng;
+                    marker.setPopupContent(`Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`).openPopup();
+                    setLocationFields(lat, lng);
+                    validateForm();
+                });
+
+                function setLocationFields(lat, lng) {
+                    document.getElementById('latitude').value = lat;
+                    document.getElementById('longitude').value = lng;
+                    document.getElementById('location').value = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+                }
+
+                // Set default date
+                document.getElementById('dateOccurred').value = new Date().toISOString().split('T')[0];
+
+                // Form validation
+                const requiredFields = [
+                    'corruptionType', 'description', 'latitude', 'longitude', 'dateOccurred'
+                ];
+
+                function validateForm() {
+                    let valid = true;
+                    for (const id of requiredFields) {
+                        const el = document.getElementById(id);
+                        if (!el.value || (el.type === 'select-one' && el.selectedIndex === 0)) {
+                            valid = false;
+                            break;
+                        }
+                    }
+                    document.getElementById('submitBtn').disabled = !valid;
+                }
+
+                // Add validation listeners
+                requiredFields.forEach(id => {
+                    document.getElementById(id).addEventListener('input', validateForm);
+                });
+                validateForm();
+
+                // Form submission handler
+                document.getElementById('reportForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    clearError();
+                    const btn = document.getElementById('submitBtn');
+                    btn.disabled = true;
+                    btn.textContent = 'Submitting...';
+
+                    try {
+                        const reportData = {
+                            corruption_type: document.getElementById('corruptionType').value,
+                            description: document.getElementById('description').value,
+                            location: document.getElementById('location').value,
+                            latitude: parseFloat(document.getElementById('latitude').value),
+                            longitude: parseFloat(document.getElementById('longitude').value),
+                            date_occurred: document.getElementById('dateOccurred').value,
+                            created_at: new Date().toISOString(),
+                            status: 'pending'
+                        };
+
+                        const newReportRef = db.ref('reports').push();
+                        await newReportRef.set(reportData);
+
+                        alert('Report submitted successfully! Reference ID: ' + newReportRef.key);
+                        
+                        // Reset form
+                        document.getElementById('reportForm').reset();
+                        marker.setLatLng([defaultLat, defaultLng]);
+                        map.setView([defaultLat, defaultLng], 6);
+                        setLocationFields(defaultLat, defaultLng);
+                        document.getElementById('dateOccurred').value = new Date().toISOString().split('T')[0];
+                        validateForm();
+
+                    } catch (err) {
+                        console.error('Submission error:', err);
+                        showError('Error: ' + err.message);
+                    } finally {
+                        btn.disabled = false;
+                        btn.textContent = 'Submit Report';
+                    }
+                });
+
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showError('Failed to initialize application. Please refresh the page.');
+            }
         });
-      });
-    }
     </script>
 </body>
 </html>
-
-
-
-
