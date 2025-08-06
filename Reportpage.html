@@ -111,8 +111,27 @@
         <button type="submit">Submit Report</button>
     </form>
 
+    <!-- Add Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.x.x/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.x.x/firebase-storage.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.x.x/firebase-database.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+
     <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "your-api-key",
+            authDomain: "corruption-watch-kenya.firebaseapp.com",
+            databaseURL: "https://corruption-watch-kenya-default-rtdb.firebaseio.com",
+            projectId: "corruption-watch-kenya",
+            storageBucket: "corruption-watch-kenya.appspot.com",
+            messagingSenderId: "your-sender-id",
+            appId: "your-app-id"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
         // Initialize map
         const map = L.map('map').setView([0.0236, 37.9062], 6);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
@@ -154,60 +173,58 @@
             }
         });
         
-       // Change the form submission handler to:
-document.getElementById('reportForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = e.target.querySelector('button');
-    btn.disabled = true;
-    btn.textContent = 'Submitting...';
-    
-    try {
-        const formData = new FormData();
-        formData.append('corruptionType', document.getElementById('corruptionType').value);
-        formData.append('description', document.getElementById('description').value);
-        formData.append('location', document.getElementById('location').value);
-        formData.append('latitude', document.getElementById('latitude').value);
-        formData.append('longitude', document.getElementById('longitude').value);
-        formData.append('dateOccurred', document.getElementById('dateOccurred').value);
-        
-        const evidenceFilesElement = document.getElementById('evidenceFiles');
-        if (evidenceFilesElement && evidenceFilesElement.files) {
-            const files = evidenceFilesElement.files;
-            for (let i = 0; i < files.length; i++) {
-                formData.append('evidenceFiles', files[i]);
-            }
-        }
-        
-        const response = await fetch('/api/report', {
-            method: 'POST',
-            body: formData
-        });
-        
-        const responseText = await response.text();
-        
-        if (!response.ok) {
-            // Try to parse as JSON, fallback to raw text
+        // Updated form submission handler for Firebase
+        document.getElementById('reportForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
+            
             try {
-                const errorData = JSON.parse(responseText);
-                throw new Error(errorData.error || 'Submission failed');
-            } catch {
-                throw new Error(responseText || 'Submission failed');
+                const evidenceFiles = document.getElementById('evidenceFiles').files;
+                const fileUrls = [];
+
+                // Upload files to Firebase Storage
+                if (evidenceFiles.length > 0) {
+                    for (const file of evidenceFiles) {
+                        const fileRef = firebase.storage().ref()
+                            .child(`evidence/${Date.now()}-${Math.floor(Math.random() * 1000)}${file.name}`);
+                        
+                        await fileRef.put(file);
+                        const downloadUrl = await fileRef.getDownloadURL();
+                        fileUrls.push(downloadUrl);
+                    }
+                }
+
+                // Create report data
+                const reportData = {
+                    corruption_type: document.getElementById('corruptionType').value,
+                    description: document.getElementById('description').value,
+                    location: document.getElementById('location').value,
+                    latitude: parseFloat(document.getElementById('latitude').value),
+                    longitude: parseFloat(document.getElementById('longitude').value),
+                    date_occurred: document.getElementById('dateOccurred').value,
+                    evidence_files: fileUrls,
+                    created_at: new Date().toISOString(),
+                    status: 'pending'
+                };
+
+                // Push to Firebase Realtime Database
+                const newReportRef = firebase.database().ref('reports').push();
+                await newReportRef.set(reportData);
+
+                alert('Report submitted successfully! ID: ' + newReportRef.key);
+                document.getElementById('reportForm').reset();
+                document.getElementById('fileList').innerHTML = '';
+                
+            } catch (err) {
+                console.error('Submission error:', err);
+                alert('Error: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Submit Report';
             }
-        }
-        
-        // Success case - parse the JSON
-        const result = JSON.parse(responseText);
-        alert('Report submitted successfully! ID: ' + result.id);
-        document.getElementById('reportForm').reset();
-        
-    } catch (err) {
-        console.error('Submission error:', err);
-        alert('Error: ' + err.message);
-    } finally {
-        btn.disabled = false;
-        btn.textContent = 'Submit Report';
-    }
-});
+        });
     </script>
 </body>
 </html>
