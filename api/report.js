@@ -2,8 +2,10 @@ require('dotenv').config();
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
-const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
+const { initializeApp } = require('firebase/app');
+const { getStorage, ref, uploadBytes, getDownloadURL } = require('firebase/storage');
+const { getDatabase, ref: dbRef, push, set } = require('firebase/database');
 
 const app = express();
 
@@ -14,6 +16,22 @@ app.use(cors());
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: "corruption-watch-kenya.firebaseapp.com",
+  databaseURL: "https://corruption-watch-kenya-default-rtdb.firebaseio.com",
+  projectId: "corruption-watch-kenya",
+  storageBucket: "corruption-watch-kenya.appspot.com",
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.FIREBASE_APP_ID
+};
+
+// Initialize Firebase
+const firebaseApp = initializeApp(firebaseConfig);
+const storage = getStorage(firebaseApp);
+const database = getDatabase(firebaseApp);
+
 // Multer configuration
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -22,12 +40,6 @@ const upload = multer({
     files: 5
   }
 });
-
-// Supabase client - using ONLY service role key to bypass all restrictions
-const supabase = createClient(
-    process.env.SUPABASE_URL || 'https://seskyvuvplritijwnjbw.supabase.co',
-    process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlc2t5dnV2cGxyaXRpanduamJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwNzM4OTIsImV4cCI6MjA2OTY0OTg5Mn0.0O1EV1J7yfHPojaOI9j4F5uJb0Q1e5RnIqlhJv5LeCU'
-);
 
 // API endpoint
 app.post('/api/report', upload.array('evidenceFiles', 5), async (req, res) => {
@@ -48,44 +60,41 @@ app.post('/api/report', upload.array('evidenceFiles', 5), async (req, res) => {
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
         const fileExt = path.extname(file.originalname);
-        const fileName = `${Date.now()}-${Math.floor(Math.random() * 1000)}${fileExt}`;
+        const fileName = `evidence/${Date.now()}-${Math.floor(Math.random() * 1000)}${fileExt}`;
+        const storageRef = ref(storage, fileName);
         
-        const { error: uploadError } = await supabase.storage
-          .from('corruption-evidence')
-          .upload(`evidence/${fileName}`, file.buffer, {
-            contentType: file.mimetype,
-            upsert: false
-          });
+        // Upload file to Firebase Storage
+        await uploadBytes(storageRef, file.buffer, {
+          contentType: file.mimetype
+        });
 
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('corruption-evidence')
-          .getPublicUrl(`evidence/${fileName}`);
-
-        fileUrls.push(publicUrl);
+        // Get download URL
+        const downloadURL = await getDownloadURL(storageRef);
+        fileUrls.push(downloadURL);
       }
     }
 
-    // Insert report
-    const { data, error } = await supabase
-      .from('app_private.corruption_reports')  // Update the schema reference
-      .insert([{
-        corruption_type: req.body.corruptionType,
-        description: req.body.description,
-        location: req.body.location,
-        latitude: parseFloat(req.body.latitude),
-        longitude: parseFloat(req.body.longitude),
-        date_occurred: req.body.dateOccurred,
-        evidence_files: fileUrls
-      }])
-      .select();
+    // Create report data
+    const reportData = {
+      corruption_type: req.body.corruptionType,
+      description: req.body.description,
+      location: req.body.location,
+      latitude: parseFloat(req.body.latitude),
+      longitude: parseFloat(req.body.longitude),
+      date_occurred: req.body.dateOccurred,
+      evidence_files: fileUrls,
+      created_at: new Date().toISOString(),
+      status: 'pending'
+    };
 
-    if (error) throw error;
+    // Push to Firebase Realtime Database
+    const reportsRef = dbRef(database, 'reports');
+    const newReportRef = push(reportsRef);
+    await set(newReportRef, reportData);
 
     return res.status(200).json({
       success: true,
-      id: data[0].id
+      id: newReportRef.key
     });
 
   } catch (error) {
