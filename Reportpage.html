@@ -111,13 +111,14 @@
         <button type="submit">Submit Report</button>
     </form>
 
-    <!-- Add Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.x.x/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.x.x/firebase-storage.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.x.x/firebase-database.js"></script>
+    <!-- Add Firebase SDK with correct versions -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 
     <script>
+    document.addEventListener('DOMContentLoaded', function() {
         // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyD7NFb1hFX3VFzfbJ0UmY-mDby-6w3MYuk",
@@ -244,6 +245,7 @@
                 btn.textContent = 'Submit Report';
             }
         });
+    });
     </script>
 </body>
 </html>
