@@ -1,406 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Corruption Watch Kenya</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root {
-            --primary-color: #006341;
-            --secondary-color: #BB0000;
-            --light-color: #f4f4f4;
-            --dark-color: #333;
-        }
-        
-        body {
-            font-family: 'Open Sans', sans-serif;
-            line-height: 1.6;
-            color: var(--dark-color);
-            background-color: var(--light-color);
-            margin: 0;
-            padding: 0;
-        }
-        
-        header {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            position: relative;
-            z-index: 100;
-        }
-        
-        .logo {
-            font-weight: 700;
-            font-size: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .logo img {
-            height: 50px;
-        }
-        
-        .dashboard-container {
-            max-width: 1200px;
-            margin: 2rem auto;
-            padding: 0 1rem;
-        }
-        
-        .dashboard-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-        }
-        
-        .dashboard-title {
-            color: var(--primary-color);
-            margin: 0;
-        }
-        
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        
-        .stat-card {
-            background: white;
-            border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        
-        .stat-card h3 {
-            margin-top: 0;
-            color: var(--primary-color);
-        }
-        
-        .stat-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin: 0.5rem 0;
-            color: var(--secondary-color);
-        }
-        
-        .chart-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        
-        @media (max-width: 768px) {
-            .chart-container {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        .chart-card {
-            background: white;
-            border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .chart-card h3 {
-            margin-top: 0;
-            color: var(--primary-color);
-        }
-        
-        .chart-wrapper {
-            position: relative;
-            height: 300px;
-            width: 100%;
-        }
-        
-        .map-container {
-            height: 500px;
-            background: #eee;
-            margin-bottom: 1.5rem;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        
-        #heatmap {
-            height: 100%;
-            width: 100%;
-        }
-        
-        footer {
-            background: var(--dark-color);
-            color: white;
-            text-align: center;
-            padding: 2rem;
-            margin-top: 2rem;
-        }
-        
-        .filters {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-        }
-        
-        .filter-group {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .filter-group label {
-            font-weight: 600;
-        }
-        
-        .filter-group select {
-            padding: 0.5rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        
-        .recent-reports {
-            background: white;
-            border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .reports-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .reports-table th, .reports-table td {
-            padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .reports-table th {
-            background-color: var(--light-color);
-            font-weight: 600;
-        }
-        
-        .status-badge {
-            display: inline-block;
-            padding: 0.25rem 0.5rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-        
-        .status-pending {
-            background-color: #FFF3CD;
-            color: #856404;
-        }
-        
-        .status-investigating {
-            background-color: #D1ECF1;
-            color: #0C5460;
-        }
-        
-        .status-resolved {
-            background-color: #D4EDDA;
-            color: #155724;
-        }
-        
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 2rem;
-        }
-        
-        .spinner {
-            border: 4px solid rgba(0,0,0,0.1);
-            border-radius: 50%;
-            border-top: 4px solid var(--primary-color);
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 1rem;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
+    <!-- ... [Your head content as provided] ... -->
 </head>
 <body>
-    <header>
-        <div class="logo">
-            <img src="Nc.png" alt="Corruption Watch Kenya Logo">
-            <span>Corruption Watch Kenya</span>
-        </div>
-    </header>
-    
-    <div class="dashboard-container">
-        <div class="dashboard-header">
-            <h1 class="dashboard-title">Corruption Cases Dashboard</h1>
-            <div class="filters">
-                <div class="filter-group">
-                    <label for="timePeriod">Time Period:</label>
-                    <select id="timePeriod">
-                        <option value="7days">Last 7 Days</option>
-                        <option value="30days">Last 30 Days</option>
-                        <option value="90days">Last 90 Days</option>
-                        <option value="all" selected>All Time</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="corruptionType">Corruption Type:</label>
-                    <select id="corruptionType">
-                        <option value="all" selected>All Types</option>
-                        <option value="bribery">Bribery</option>
-                        <option value="embezzlement">Embezzlement</option>
-                        <option value="nepotism">Nepotism</option>
-                        <option value="fraud">Fraud</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="status">Status:</label>
-                    <select id="status">
-                        <option value="all" selected>All Statuses</option>
-                        <option value="pending">Pending</option>
-                        <option value="investigating">Investigating</option>
-                        <option value="resolved">Resolved</option>
-                    </select>
-                </div>
-                <button id="refreshBtn" class="btn">
-                    <i class="fas fa-sync-alt"></i> Refresh
-                </button>
-            </div>
-        </div>
-        
-        <div id="loadingIndicator" class="loading">
-            <div class="spinner"></div>
-            <p>Loading dashboard data...</p>
-        </div>
-        
-        <div id="dashboardContent">
-            <div class="stats-container">
-                <div class="stat-card">
-                    <h3>Total Reports</h3>
-                    <div class="stat-value" id="totalReports">0</div>
-                    <div class="stat-label">Cases reported</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Under Investigation</h3>
-                    <div class="stat-value" id="investigating">0</div>
-                    <div class="stat-label">Active cases</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Resolved Cases</h3>
-                    <div class="stat-value" id="resolved">0</div>
-                    <div class="stat-label">Cases closed</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Hotspot Regions</h3>
-                    <div class="stat-value" id="hotspots">0</div>
-                    <div class="stat-label">High density areas</div>
-                </div>
-            </div>
-            
-            <div class="chart-container">
-                <div class="chart-card">
-                    <h3>Reports by Corruption Type</h3>
-                    <div class="chart-wrapper">
-                        <canvas id="typeChart"></canvas>
-                    </div>
-                </div>
-                <div class="chart-card">
-                    <h3>Monthly Trend</h3>
-                    <div class="chart-wrapper">
-                        <canvas id="trendChart"></canvas>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="chart-card">
-                <h3>Corruption Heatmap - Kenya</h3>
-                <div class="map-container">
-                    <div id="heatmap"></div>
-                </div>
-            </div>
-            
-            <div class="chart-card">
-                <h3>Resolution Status</h3>
-                <div class="chart-wrapper">
-                    <canvas id="statusChart"></canvas>
-                </div>
-            </div>
-            
-            <div class="recent-reports">
-                <h3>Recent Reports</h3>
-                <div class="table-responsive">
-                    <table class="reports-table" id="reportsTable">
-                        <thead>
-                            <tr>
-                                <th>Case ID</th>
-                                <th>Type</th>
-                                <th>Description</th>
-                                <th>Location</th>
-                                <th>Date Reported</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Data will be loaded here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <footer>
-        <p>Corruption Watch Kenya &copy; 2023</p>
-        <p>In partnership with EACC and other anti-corruption agencies</p>
-    </footer>
+    <!-- ... [Your dashboard HTML markup as provided] ... -->
 
-    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-    
-    <script>
-        // MongoDB Configuration
-        const API_BASE_URL = '/api'; // Your Vercel serverless functions endpoint
-        
-        // Global chart references
+    <!-- Firebase SDKs -->
+    <script type="module">
+        // Firebase module imports (version 9+ modular syntax)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+        import { getDatabase, ref, get, child, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+
+        // Your Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyD7NFb1hFX3VFzfbJ0UmY-mDby-6w3MYuk",
+            authDomain: "corruption-watch-kenya.firebaseapp.com",
+            databaseURL: "https://corruption-watch-kenya-default-rtdb.firebaseio.com",
+            projectId: "corruption-watch-kenya",
+            storageBucket: "corruption-watch-kenya.appspot.com",
+            messagingSenderId: "1032330075769",
+            appId: "1:1032330075769:web:6e5f0d984d95cec8c5bea8",
+            measurementId: "G-TZJZCMY0ME"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Chart.js and map globals
         let typeChart, trendChart, statusChart, heatmap;
         let allReportsData = [];
-        
-        // Initialize the dashboard when DOM is loaded
+
         document.addEventListener('DOMContentLoaded', async function() {
-            // Initialize the map
             initMap();
-            
-            // Initialize charts with empty data
             initCharts();
-            
-            // Load initial data
             await loadDashboardData();
-            
-            // Set up event listeners
+
             document.getElementById('refreshBtn').addEventListener('click', loadDashboardData);
-            document.querySelectorAll('.filters select').forEach(select => {
-                select.addEventListener('change', loadDashboardData);
-            });
+            document.querySelectorAll('.filters select').forEach(sel => sel.addEventListener('change', loadDashboardData));
         });
-        
+
         // Initialize Leaflet map
         function initMap() {
             heatmap = L.map('heatmap').setView([0.0236, 37.9062], 6);
@@ -408,172 +46,215 @@
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(heatmap);
         }
-        
+
         // Initialize Chart.js charts
         function initCharts() {
+            // ... [Same as your chart initialization code] ...
             const typeCtx = document.getElementById('typeChart').getContext('2d');
-            typeChart = new Chart(typeCtx, {
-                type: 'doughnut',
-                data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-            
+            typeChart = new Chart(typeCtx, { type: 'doughnut', data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] } });
             const trendCtx = document.getElementById('trendChart').getContext('2d');
-            trendChart = new Chart(trendCtx, {
-                type: 'line',
-                data: { labels: [], datasets: [{ data: [], borderColor: '#006341' }] },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-            
+            trendChart = new Chart(trendCtx, { type: 'line', data: { labels: [], datasets: [{ data: [], borderColor: '#006341' }] } });
             const statusCtx = document.getElementById('statusChart').getContext('2d');
-            statusChart = new Chart(statusCtx, {
-                type: 'bar',
-                data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
+            statusChart = new Chart(statusCtx, { type: 'bar', data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] } });
         }
-        
-        // Load data from MongoDB via API
+
+        // --- DATA LOADING AND ANALYSIS FUNCS ---
+
+        // Main data loader
         async function loadDashboardData() {
+            showLoading(true);
             try {
-                showLoading(true);
-                
-                // Get current filter values
+                // Fetch all reports
+                const snapshot = await get(child(ref(db), 'reports'));
+                if (!snapshot.exists()) {
+                    allReportsData = [];
+                } else {
+                    // Convert to array, append key as id
+                    allReportsData = Object.entries(snapshot.val()).map(([id, r]) => ({ id, ...r }));
+                }
+
+                // Filter client-side according to UI
                 const filters = {
                     timePeriod: document.getElementById('timePeriod').value,
                     corruptionType: document.getElementById('corruptionType').value,
                     status: document.getElementById('status').value
                 };
-                
-                // Fetch data from API
-                const response = await fetch(`${API_BASE_URL}/get-reports?${new URLSearchParams(filters)}`);
-                if (!response.ok) throw new Error('Failed to fetch data');
-                
-                const data = await response.json();
-                allReportsData = data.reports || [];
-                
-                // Update dashboard with new data
-                updateStats(data.stats);
-                updateTypeChart(data.typeDistribution);
-                updateTrendChart(data.monthlyTrend);
-                updateStatusChart(data.statusDistribution);
-                updateHeatmap(data.heatmapData);
-                updateRecentReports(allReportsData);
-                
-            } catch (error) {
-                console.error('Error loading dashboard data:', error);
-                alert('Error loading data. Please try again.');
+                let filtered = applyFilters(allReportsData, filters);
+
+                // Stats and chart building
+                updateStats(computeStats(filtered));
+                updateTypeChart(getTypeDist(filtered));
+                updateTrendChart(getMonthlyTrend(filtered));
+                updateStatusChart(getStatusDist(filtered));
+                updateHeatmap(getHeatmapData(filtered));
+                updateRecentReports(filtered);
+
+            } catch (e) {
+                console.error('Dashboard error:', e);
+                alert('Error loading data from Firebase.');
             } finally {
                 showLoading(false);
             }
         }
-        
-        // Fetch reports from the server
-        const fetchReports = async () => {
-          try {
-            const response = await fetch('/api/reports');
-            const reports = await response.json();
-            
-            // Sort reports by date
-            reports.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-            
-            // Update your dashboard UI with the reports data
-            displayReports(reports);
-          } catch (error) {
-            console.error('Error fetching reports:', error);
-          }
-        };
-        
-        // Update statistics cards
+
+        // Data helpers
+        function applyFilters(data, { timePeriod, corruptionType, status }) {
+            const now = new Date();
+            return data.filter(report => {
+                // Time filter
+                if (timePeriod !== 'all') {
+                    const days = { "7days": 7, "30days": 30, "90days": 90 }[timePeriod];
+                    if (days) {
+                        const reportDate = new Date(report.created_at);
+                        if ((now - reportDate) > days*24*60*60*1000) return false;
+                    }
+                }
+                // Corruption type filter
+                if (corruptionType !== 'all' && report.corruption_type !== corruptionType) return false;
+                // Status filter
+                if (status !== 'all' && normalizeStatus(report.status) !== status) return false;
+                return true;
+            });
+        }
+
+        function normalizeStatus(status) {
+            if (status === 'under_investigation') return 'investigating';
+            if (status === 'pending') return 'pending';
+            if (status === 'resolved') return 'resolved';
+            return 'pending';
+        }
+
+        function computeStats(reports) {
+            const total = reports.length;
+            let underInvestigation=0, resolved=0, pending=0;
+            let locationMap = {};
+            reports.forEach(r => {
+                const normStat = normalizeStatus(r.status);
+                if (normStat === 'investigating') underInvestigation++;
+                else if (normStat === 'resolved') resolved++;
+                else pending++;
+                locationMap[r.location||'Unknown'] = (locationMap[r.location||'Unknown']||0)+1;
+            });
+            // Hotspots: regions with counts above mean+stddev, or just top-N.
+            const regionCounts = Object.values(locationMap);
+            let hotspots = 0;
+            if (regionCounts.length) {
+                const avg = regionCounts.reduce((a,b)=>a+b,0)/regionCounts.length;
+                const stddev = Math.sqrt(regionCounts.reduce((a,b)=>a+(b-avg)**2,0)/regionCounts.length);
+                hotspots = regionCounts.filter(c => c >= avg+stddev).length;
+            }
+            return { total, underInvestigation, resolved, pending: hotspots };
+        }
+
+        function getTypeDist(reports) {
+            const types = {}, colors = { bribery:'#FFD600', embezzlement:'#E57373', nepotism:'#64B5F6', fraud:'#81C784', other:'#9E9E9E' };
+            reports.forEach(r => {
+                const k = r.corruption_type || 'other';
+                types[k] = (types[k]||0)+1;
+            });
+            const labels = Object.keys(types);
+            const data = labels.map(k=>types[k]);
+            const backgroundColor = labels.map(k => colors[k] || '#BBB');
+            return { labels, data, backgroundColor };
+        }
+
+        function getStatusDist(reports) {
+            const stats = {}; const colorMap={pending:'#FFD600', investigating:'#64B5F6', resolved:'#81C784'};
+            reports.forEach(r => {
+                const k = normalizeStatus(r.status);
+                stats[k] = (stats[k]||0)+1;
+            });
+            const labels = Object.keys(stats);
+            const data = labels.map(k=>stats[k]);
+            const backgroundColor = labels.map(k=>colorMap[k] || '#BBB');
+            return { labels, data, backgroundColor };
+        }
+
+        function getMonthlyTrend(reports) {
+            // Group by months (YYYY-MM)
+            const counts = {};
+            reports.forEach(r => {
+                const d = new Date(r.created_at);
+                const k = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}`;
+                counts[k] = (counts[k]||0)+1;
+            });
+            const sortedMonths = Object.keys(counts).sort();
+            const data = sortedMonths.map(m=>counts[m]);
+            return { labels: sortedMonths, data };
+        }
+
+        function getHeatmapData(reports) {
+            // Returns array of [lat, lng, intensity]
+            return reports
+                .filter(r => r.latitude && r.longitude)
+                .map(r => [Number(r.latitude), Number(r.longitude), 1]);
+        }
+
+        // --- DASHBOARD UI UPDATERS (as in your code) ---
         function updateStats(stats) {
             document.getElementById('totalReports').textContent = stats.total.toLocaleString();
             document.getElementById('investigating').textContent = stats.underInvestigation.toLocaleString();
             document.getElementById('resolved').textContent = stats.resolved.toLocaleString();
             document.getElementById('hotspots').textContent = stats.pending.toLocaleString();
         }
-        
-        // Update reports by type chart
         function updateTypeChart(typeData) {
             typeChart.data.labels = typeData.labels;
             typeChart.data.datasets[0].data = typeData.data;
             typeChart.data.datasets[0].backgroundColor = typeData.backgroundColor;
             typeChart.update();
         }
-        
-        // Update monthly trend chart
         function updateTrendChart(trendData) {
             trendChart.data.labels = trendData.labels;
             trendChart.data.datasets[0].data = trendData.data;
             trendChart.update();
         }
-        
-        // Update status distribution chart
         function updateStatusChart(statusData) {
             statusChart.data.labels = statusData.labels;
             statusChart.data.datasets[0].data = statusData.data;
             statusChart.data.datasets[0].backgroundColor = statusData.backgroundColor;
             statusChart.update();
         }
-        
-        // Update heatmap with new data
         function updateHeatmap(heatmapData) {
             if (window.heatmapLayer) {
                 heatmap.removeLayer(window.heatmapLayer);
             }
-            
             if (heatmapData && heatmapData.length > 0) {
                 window.heatmapLayer = L.heatLayer(heatmapData, {
-                    radius: 25,
-                    blur: 15,
-                    maxZoom: 17,
-                    gradient: {0.4: 'blue', 0.6: 'lime', 0.8: 'yellow', 1.0: 'red'}
+                    radius: 25, blur: 15, maxZoom: 17, gradient: {0.4:'blue',0.6:'lime',0.8:'yellow',1.0:'red'}
                 }).addTo(heatmap);
             }
         }
-        
-        // Update recent reports table
         function updateRecentReports(reports) {
             const tableBody = document.querySelector('#reportsTable tbody');
             tableBody.innerHTML = '';
-            
-            const recentReports = reports.slice(0, 10); // Show 10 most recent
-            
+            const recentReports = [...reports].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,10);
             recentReports.forEach(report => {
                 const row = document.createElement('tr');
-                
-                // Format status badge
                 let statusBadge;
-                if (report.status === 'pending') {
-                    statusBadge = `<span class="status-badge status-pending">Pending</span>`;
-                } else if (report.status === 'under_investigation') {
-                    statusBadge = `<span class="status-badge status-investigating">Investigating</span>`;
-                } else {
-                    statusBadge = `<span class="status-badge status-resolved">Resolved</span>`;
-                }
-                
-                // Shorten description for table display
-                const shortDescription = report.description.length > 50 
-                    ? `${report.description.substring(0, 50)}...` 
-                    : report.description;
-                
+                const normStat = normalizeStatus(report.status);
+                if (normStat === 'pending') statusBadge = `<span class="status-badge status-pending">Pending</span>`;
+                else if (normStat === 'investigating') statusBadge = `<span class="status-badge status-investigating">Investigating</span>`;
+                else statusBadge = `<span class="status-badge status-resolved">Resolved</span>`;
+                const shortDescription = (report.description||'').length > 50 ? `${report.description.substring(0, 50)}...` : (report.description||'');
                 row.innerHTML = `
                     <td>CWK-${report.id || 'N/A'}</td>
-                    <td>${report.corruption_type}</td>
+                    <td>${report.corruption_type||'N/A'}</td>
                     <td>${shortDescription}</td>
-                    <td>${report.location || 'N/A'}</td>
-                    <td>${new Date(report.created_at).toLocaleDateString()}</td>
+                    <td>${report.location||'N/A'}</td>
+                    <td>${report.created_at ? new Date(report.created_at).toLocaleDateString() : 'N/A'}</td>
                     <td>${statusBadge}</td>
                 `;
-                
                 tableBody.appendChild(row);
             });
         }
-        
-        // Show/hide loading indicator
         function showLoading(show) {
             document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
             document.getElementById('dashboardContent').style.display = show ? 'none' : 'block';
         }
     </script>
+    <!-- Your scripts for Chart.js, Leaflet, etc. -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 </body>
 </html>
