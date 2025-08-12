@@ -17,7 +17,7 @@
       margin-bottom: 10px;
       border: 1px solid #ccc;
     }
-    input, select, textarea, button {
+    input, select, textarea, button, progress {
       width: 100%;
       margin-bottom: 15px;
       padding: 10px;
@@ -63,16 +63,21 @@
     <label for="dateOccurred">Date Occurred</label>
     <input type="date" id="dateOccurred" required />
 
+    <label for="evidenceFile">Upload Evidence File (optional)</label>
+    <input type="file" id="evidenceFile" accept=".jpg,.jpeg,.png,.pdf" />
+
+    <progress id="uploadProgress" value="0" max="100" style="display:none;"></progress>
+
     <button type="submit">Submit Report</button>
   </form>
 
-  <!-- JS Libraries -->
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-  <script>
-    // Firebase config
+    // Your Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyD7NFb1hFX3VFzfbJ0UmY-mDby-6w3MYuk",
       authDomain: "corruption-watch-kenya.firebaseapp.com",
@@ -83,30 +88,43 @@
       appId: "1:1032330075769:web:6e5f0d984d95cec8c5bea8"
     };
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const storage = getStorage(app);
 
     const reportForm = document.getElementById('reportForm');
     const locationInput = document.getElementById('location');
     const errorDiv = document.getElementById('error');
+    const progressBar = document.getElementById('uploadProgress');
 
     let marker;
 
-    // Reverse geocode
+    // Generates a unique case ID
+    function generateCaseId() {
+      const timestamp = Date.now().toString(36);
+      const randomPart = Math.random().toString(36).substring(2, 8);
+      return `CWK-${timestamp}-${randomPart}`.toUpperCase();
+    }
+
     async function getLocationName(lat, lng) {
       try {
         const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
         const data = await response.json();
         const addr = data.address;
-        return `${addr.county || ''}, ${addr.town || addr.city || ''}, ${addr.suburb || addr.village || ''}`.replace(/,+$/, '').trim();
-      } catch (err) {
+        const parts = [addr.city || addr.town || addr.village, addr.county, addr.state, addr.country];
+        return parts.filter(Boolean).join(', ') || "Unknown Location";
+      } catch (error) {
+        console.error("Geocoding failed:", error);
         return "Unknown Location";
       }
     }
 
-    // Initialize map
-    const map = L.map('map').setView([-1.2921, 36.8219], 7); // Nairobi
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    const map = L.map('map').setView([-1.2921, 36.8219], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
     marker = L.marker([-1.2921, 36.8219], { draggable: true }).addTo(map);
 
     async function updateLocation(lat, lng) {
@@ -124,7 +142,7 @@
       await updateLocation(e.latlng.lat, e.latlng.lng);
     });
 
-    updateLocation(-1.2921, 36.8219); // initial
+    updateLocation(-1.2921, 36.8219);
 
     reportForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -135,30 +153,60 @@
       const people = document.getElementById('peopleInvolved').value.trim();
       const locationName = locationInput.value.trim();
       const date = document.getElementById('dateOccurred').value.trim();
-
+      const evidenceFile = document.getElementById('evidenceFile').files[0];
+      
       if (!type || !desc || !locationName || !date) {
         errorDiv.textContent = "Please fill in all required fields.";
         return;
       }
-
-      const report = {
-        corruptionType: type,
-        description: desc,
-        peopleInvolved: people || "Not specified",
-        location: locationName,
-        dateOccurred: date,
-        timestamp: new Date().toISOString()
-      };
+      
+      const caseId = generateCaseId();
+      const newReportRef = ref(db, `reports/${caseId}`);
+      let fileUrl = "";
 
       try {
-        const newRef = db.ref("reports").push();
-        await newRef.set(report);
-        alert("Report submitted successfully.");
-        reportForm.reset();
-        locationInput.value = "";
+        if (evidenceFile) {
+          const storageRefPath = storageRef(storage, `reports_files/${caseId}/${evidenceFile.name}`);
+          const uploadTask = uploadBytesResumable(storageRefPath, evidenceFile);
+          
+          progressBar.style.display = "block";
+
+          await new Promise((resolve, reject) => {
+            uploadTask.on('state_changed',
+              (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                progressBar.value = progress;
+              },
+              reject,
+              async () => {
+                fileUrl = await getDownloadURL(uploadTask.snapshot.ref);
+                resolve();
+              }
+            );
+          });
+        }
+
+        const reportData = {
+          caseId: caseId,
+          corruptionType: type,
+          description: desc,
+          peopleInvolved: people || "Not specified",
+          location: locationName,
+          dateOccurred: date,
+          evidenceFileUrl: fileUrl || "No file uploaded",
+          latitude: marker.getLatLng().lat,
+          longitude: marker.getLatLng().lng,
+          timestamp: new Date().toISOString()
+        };
+
+        await set(newReportRef, reportData);
+
+        alert(`Report submitted successfully. Your case ID is: ${caseId}`);
+        window.location.href = 'index.html';
+
       } catch (error) {
         errorDiv.textContent = "Submission failed. Please try again.";
-        console.error(error);
+        console.error("Submission error:", error);
       }
     });
   </script>
