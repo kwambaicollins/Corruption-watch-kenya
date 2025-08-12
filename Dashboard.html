@@ -7,8 +7,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* A universal selector to apply border-box for consistent sizing */
         * {
@@ -47,14 +45,14 @@
             gap: 1rem; 
             margin-bottom: 2rem; 
         }
-        .stat-card, .chart-card { 
+        .stat-card, .table-card { 
             background: #fff; 
             padding: 1.5rem; 
             border-radius: 8px; 
             box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
             transition: transform 0.2s;
         }
-        .stat-card:hover, .chart-card:hover {
+        .stat-card:hover {
             transform: translateY(-5px);
         }
         .stat-card h3 {
@@ -68,24 +66,7 @@
             font-weight: 700;
             color: #006341;
         }
-        .chart-container { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-        .map-container { 
-            height: 500px; 
-            border-radius: 8px;
-            overflow: hidden;
-            margin-top: 1rem;
-        }
-        /* Add a container for the table to handle horizontal scrolling on small screens */
-        .table-container {
-            overflow-x: auto;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
+        
         .reports-table { 
             width: 100%; 
             border-collapse: collapse; 
@@ -111,16 +92,8 @@
         .status-pending { background: #FFF3CD; color: #856404; }
         .status-investigating { background: #D1ECF1; color: #0C5460; }
         .status-resolved { background: #D4EDDA; color: #155724; }
-        #caseSearchSection {
-            background: #fff; 
-            padding: 1.5rem; 
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
-        }
-        #caseSearchSection h3 {
-            margin-top: 0;
-        }
+
+        /* Style for the search input */
         #caseSearchInput {
             width: 100%;
             padding: 10px;
@@ -128,16 +101,6 @@
             border: 1px solid #ccc;
             box-sizing: border-box;
             margin-bottom: 1rem;
-        }
-        #caseDetails {
-            background-color: #f9f9f9;
-            padding: 1rem;
-            border-radius: 4px;
-            border: 1px solid #eee;
-            display: none; /* Initially hidden */
-        }
-        #caseDetails p {
-            margin: 0.5rem 0;
         }
     </style>
 </head>
@@ -152,33 +115,13 @@
             <div class="stat-card"><h3>Total Reports</h3><div id="totalReports">0</div></div>
             <div class="stat-card"><h3>Under Investigation</h3><div id="investigating">0</div></div>
             <div class="stat-card"><h3>Resolved Cases</h3><div id="resolved">0</div></div>
-            <div class="stat-card"><h3>Hotspot Regions</h3><div id="hotspots">0</div></div>
+            <div class="stat-card"><h3>Total Reports</h3><div id="totalReportsPlaceholder">0</div></div>
         </div>
 
-        <div class="chart-container">
-            <div class="chart-card"><h3>Reports by Corruption Type</h3><canvas id="typeChart"></canvas></div>
-            <div class="chart-card"><h3>Monthly Trend</h3><canvas id="trendChart"></canvas></div>
-        </div>
-
-        <div class="chart-card">
-            <h3>Corruption Heatmap - Kenya</h3>
-            <div class="map-container" id="heatmap"></div>
-        </div>
-
-        <div class="chart-card">
-            <h3>Resolution Status</h3>
-            <canvas id="statusChart"></canvas>
-        </div>
-
-        <!-- New Case Tracking Section -->
-        <div id="caseSearchSection">
-            <h3>Case Tracking</h3>
-            <input type="text" id="caseSearchInput" placeholder="Enter Case ID (e.g., CWK-G70529-65F9C3)" />
-            <div id="caseDetails"></div>
-        </div>
-
-        <div class="chart-card">
+        <div class="table-card">
             <h3>Recent Reports</h3>
+            <!-- New search bar for filtering the table -->
+            <input type="text" id="caseSearchInput" placeholder="Search by Case ID..." />
             <div class="table-container">
                 <table class="reports-table" id="casesTable">
                     <thead>
@@ -192,13 +135,7 @@
         </div>
     </div>
 
-    <footer style="text-align:center; padding:1rem; background:#333; color:#fff;">
-        Corruption Watch Kenya &copy; 2025
-    </footer>
-
-    <!-- JS Libraries -->
-    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <!-- Firebase JS Libraries -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -219,7 +156,7 @@
         const auth = getAuth(app);
 
         // Define a variable to hold the complete list of reports
-        let allReports = {};
+        let allReportsData = {};
         
         // Listen for authentication state changes and sign in anonymously
         onAuthStateChanged(auth, async (user) => {
@@ -229,154 +166,56 @@
             }
         });
 
-        // Initialize charts and map
-        let typeChartInstance, trendChartInstance, statusChartInstance;
-        let heatmapLayer;
-        let map;
-
-        function initializeMap() {
-            map = L.map('heatmap').setView([0.0236, 37.9062], 6);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-            heatmapLayer = L.heatLayer([], { radius: 25 }).addTo(map);
-        }
-
-        // Call initialization functions when the window loads
-        window.onload = function() {
-            initializeMap();
+        // Event listener for the new search bar
+        document.addEventListener('DOMContentLoaded', () => {
+            const caseSearchInput = document.getElementById('caseSearchInput');
+            caseSearchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.trim().toUpperCase();
+                filterCasesTable(searchTerm);
+            });
             loadDashboardData();
-        };
+        });
+
 
         function loadDashboardData() {
             const reportsRef = ref(db, "reports");
             onValue(reportsRef, (snapshot) => {
                 const reports = snapshot.val() || {};
-                allReports = reports; // Store reports for the search function
+                allReportsData = reports; // Store reports for the filtering function
 
                 let total = 0, investigating = 0, resolved = 0;
-                let typeCounts = {};
-                let statusCounts = { pending: 0, investigating: 0, resolved: 0 };
-                let monthlyCounts = Array(12).fill(0);
-                let heatmapPoints = [];
-
+                
                 for (const caseId in reports) {
                     const r = reports[caseId];
                     // Ensure each report has a status, default to 'pending'
                     if (!r.status) {
                         r.status = 'pending';
                     }
-
                     total++;
-                    statusCounts[r.status] = (statusCounts[r.status] || 0) + 1;
-                    typeCounts[r.corruptionType] = (typeCounts[r.corruptionType] || 0) + 1;
-
+                    
                     // Only count if status is correctly set
                     if (r.status === 'investigating') investigating++;
                     if (r.status === 'resolved') resolved++;
-                    
-                    const reportDate = new Date(r.dateOccurred);
-                    if (!isNaN(reportDate)) {
-                        const month = reportDate.getMonth();
-                        monthlyCounts[month]++;
-                    }
-                    
-                    if (r.latitude && r.longitude) {
-                        heatmapPoints.push([r.latitude, r.longitude, 0.5]);
-                    }
                 }
 
                 document.getElementById("totalReports").textContent = total;
                 document.getElementById("investigating").textContent = investigating;
                 document.getElementById("resolved").textContent = resolved;
-                document.getElementById("hotspots").textContent = new Set(heatmapPoints.map(p => `${p[0]},${p[1]}`)).size;
+                document.getElementById("totalReportsPlaceholder").textContent = total;
 
-                renderTypeChart(typeCounts);
-                renderTrendChart(monthlyCounts);
-                renderStatusChart(statusCounts);
-                updateHeatmap(heatmapPoints);
+                // Populate the table with all reports initially
                 populateCasesTable(reports);
             });
         }
         
-        function renderTypeChart(typeCounts) {
-            if (typeChartInstance) typeChartInstance.destroy();
-            typeChartInstance = new Chart(document.getElementById("typeChart"), {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(typeCounts),
-                    datasets: [{ 
-                        data: Object.values(typeCounts), 
-                        backgroundColor: ['#006341', '#FFCE56', '#FF6384', '#36A2EB', '#9966FF'] 
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                }
-            });
-        }
-
-        function renderTrendChart(monthlyCounts) {
-            if (trendChartInstance) trendChartInstance.destroy();
-            trendChartInstance = new Chart(document.getElementById("trendChart"), {
-                type: 'line',
-                data: { 
-                    labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-                    datasets: [{ 
-                        label: 'Reports', 
-                        data: monthlyCounts, 
-                        borderColor: '#006341', 
-                        backgroundColor: 'rgba(0, 99, 65, 0.2)',
-                        fill: true,
-                        tension: 0.3
-                    }] 
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                }
-            });
-        }
-
-        function renderStatusChart(statusCounts) {
-            if (statusChartInstance) statusChartInstance.destroy();
-            statusChartInstance = new Chart(document.getElementById("statusChart"), {
-                type: 'bar',
-                data: { 
-                    labels: ['Pending', 'Investigating', 'Resolved'],
-                    datasets: [{ 
-                        data: [statusCounts.pending, statusCounts.investigating, statusCounts.resolved],
-                        backgroundColor: ['#FFF3CD','#D1ECF1','#D4EDDA'] 
-                    }] 
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    }
-                }
-            });
-        }
-
-        function updateHeatmap(points) {
-            if (heatmapLayer) {
-                heatmapLayer.setLatLngs(points);
-            }
-        }
-
         function populateCasesTable(reports) {
             const tbody = document.querySelector("#casesTable tbody");
             tbody.innerHTML = "";
             const sortedReports = Object.values(reports).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
             for (const r of sortedReports) {
                 const tr = document.createElement("tr");
+                // Store the case ID in a data attribute for filtering
+                tr.setAttribute('data-case-id', r.caseId.toUpperCase()); 
                 const statusClass = `status-${r.status.toLowerCase()}`;
                 tr.innerHTML = `<td>${r.caseId}</td>
                                 <td>${r.corruptionType}</td>
@@ -387,32 +226,18 @@
             }
         }
 
-        // Case Tracking Search Logic
-        const caseSearchInput = document.getElementById('caseSearchInput');
-        const caseDetailsDiv = document.getElementById('caseDetails');
-
-        caseSearchInput.addEventListener('input', (e) => {
-            const searchTerm = e.target.value.trim().toUpperCase();
-            if (searchTerm.length > 5 && allReports[searchTerm]) {
-                const caseData = allReports[searchTerm];
-                displayCaseDetails(caseData);
-            } else {
-                caseDetailsDiv.style.display = 'none';
-            }
-        });
-
-        function displayCaseDetails(data) {
-            caseDetailsDiv.innerHTML = `
-                <p><strong>Case ID:</strong> ${data.caseId}</p>
-                <p><strong>Type:</strong> ${data.corruptionType}</p>
-                <p><strong>Status:</strong> <span class="status-badge status-${data.status.toLowerCase()}">${data.status}</span></p>
-                <p><strong>Date of Incident:</strong> ${data.dateOccurred}</p>
-                <p><strong>Location:</strong> ${data.location}</p>
-                <p><strong>Description:</strong> ${data.description}</p>
-                ${data.peopleInvolved ? `<p><strong>People Involved:</strong> ${data.peopleInvolved}</p>` : ''}
-                ${data.evidenceFileUrl && data.evidenceFileUrl !== 'No file uploaded' ? `<p><strong>Evidence File:</strong> <a href="${data.evidenceFileUrl}" target="_blank">View File</a></p>` : ''}
-            `;
-            caseDetailsDiv.style.display = 'block';
+        // New function to filter the table based on the search term
+        function filterCasesTable(searchTerm) {
+            const rows = document.querySelectorAll("#casesTable tbody tr");
+            rows.forEach(row => {
+                const caseId = row.getAttribute('data-case-id');
+                // Show row if it contains the search term, hide otherwise
+                if (caseId.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
         }
     </script>
 </body>
