@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css">
     <style>
         /* A universal selector to apply border-box for consistent sizing */
         * {
@@ -52,7 +53,7 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
             transition: transform 0.2s;
         }
-        .stat-card:hover {
+        .stat-card:hover, .table-card:hover {
             transform: translateY(-5px);
         }
         .stat-card h3 {
@@ -102,6 +103,16 @@
             box-sizing: border-box;
             margin-bottom: 1rem;
         }
+        
+        /* New style for the map container */
+        .map-container {
+            height: 500px; /* Set a fixed height for the map */
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 1rem;
+            background: #fff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
@@ -115,12 +126,16 @@
             <div class="stat-card"><h3>Total Reports</h3><div id="totalReports">0</div></div>
             <div class="stat-card"><h3>Under Investigation</h3><div id="investigating">0</div></div>
             <div class="stat-card"><h3>Resolved Cases</h3><div id="resolved">0</div></div>
-            <div class="stat-card"><h3>Total Reports</h3><div id="totalReportsPlaceholder">0</div></div>
+            <div class="stat-card"><h3>Hotspot Regions</h3><div id="hotspots">0</div></div>
         </div>
 
         <div class="table-card">
+            <h3>Corruption Heatmap - Kenya</h3>
+            <div class="map-container" id="heatmap"></div>
+        </div>
+        
+        <div class="table-card">
             <h3>Recent Reports</h3>
-            <!-- New search bar for filtering the table -->
             <input type="text" id="caseSearchInput" placeholder="Search by Case ID..." />
             <div class="table-container">
                 <table class="reports-table" id="casesTable">
@@ -128,14 +143,19 @@
                         <tr><th>Case ID</th><th>Type</th><th>Location</th><th>Date</th><th>Status</th></tr>
                     </thead>
                     <tbody>
-                        <!-- Table rows will be populated by JavaScript -->
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
         </div>
     </div>
+    
+    <footer style="text-align:center; padding:1rem; background:#333; color:#fff;">
+        Corruption Watch Kenya &copy; 2025
+    </footer>
 
-    <!-- Firebase JS Libraries -->
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -166,16 +186,24 @@
             }
         });
 
-        // Event listener for the new search bar
+        let map, heatmapLayer;
+        
         document.addEventListener('DOMContentLoaded', () => {
             const caseSearchInput = document.getElementById('caseSearchInput');
             caseSearchInput.addEventListener('input', (e) => {
                 const searchTerm = e.target.value.trim().toUpperCase();
                 filterCasesTable(searchTerm);
             });
+            initializeMap(); // Initialize the map and heatmap
             loadDashboardData();
         });
 
+        // Function to initialize the Leaflet map and heatmap layer
+        function initializeMap() {
+            map = L.map('heatmap').setView([0.0236, 37.9062], 6); // Set view to a central point in Kenya
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            heatmapLayer = L.heatLayer([], { radius: 25 }).addTo(map);
+        }
 
         function loadDashboardData() {
             const reportsRef = ref(db, "reports");
@@ -184,28 +212,41 @@
                 allReportsData = reports; // Store reports for the filtering function
 
                 let total = 0, investigating = 0, resolved = 0;
+                let heatmapPoints = [];
                 
-                for (const caseId in reports) {
+                for (const caseId in reports) { 
                     const r = reports[caseId];
-                    // Ensure each report has a status, default to 'pending'
                     if (!r.status) {
                         r.status = 'pending';
                     }
                     total++;
                     
-                    // Only count if status is correctly set
                     if (r.status === 'investigating') investigating++;
                     if (r.status === 'resolved') resolved++;
+                    
+                    // Collect lat/long for heatmap
+                    if (r.latitude && r.longitude) {
+                        heatmapPoints.push([r.latitude, r.longitude, 0.5]); // The third parameter is the intensity
+                    }
                 }
 
                 document.getElementById("totalReports").textContent = total;
                 document.getElementById("investigating").textContent = investigating;
                 document.getElementById("resolved").textContent = resolved;
-                document.getElementById("totalReportsPlaceholder").textContent = total;
+                document.getElementById("hotspots").textContent = new Set(heatmapPoints.map(p => `${p[0]},${p[1]}`)).size;
 
-                // Populate the table with all reports initially
+                // Update the heatmap layer with the new points
+                updateHeatmap(heatmapPoints);
+                
                 populateCasesTable(reports);
             });
+        }
+        
+        // Function to update the heatmap
+        function updateHeatmap(points) {
+            if (heatmapLayer) {
+                heatmapLayer.setLatLngs(points);
+            }
         }
         
         function populateCasesTable(reports) {
@@ -214,7 +255,6 @@
             const sortedReports = Object.values(reports).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
             for (const r of sortedReports) {
                 const tr = document.createElement("tr");
-                // Store the case ID in a data attribute for filtering
                 tr.setAttribute('data-case-id', r.caseId.toUpperCase()); 
                 const statusClass = `status-${r.status.toLowerCase()}`;
                 tr.innerHTML = `<td>${r.caseId}</td>
@@ -226,12 +266,10 @@
             }
         }
 
-        // New function to filter the table based on the search term
         function filterCasesTable(searchTerm) {
             const rows = document.querySelectorAll("#casesTable tbody tr");
             rows.forEach(row => {
                 const caseId = row.getAttribute('data-case-id');
-                // Show row if it contains the search term, hide otherwise
                 if (caseId.includes(searchTerm)) {
                     row.style.display = '';
                 } else {
