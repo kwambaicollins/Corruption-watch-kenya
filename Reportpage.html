@@ -75,8 +75,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-    import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-
+    
     // Your Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyD7NFb1hFX3VFzfbJ0UmY-mDby-6w3MYuk",
@@ -90,12 +89,12 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const storage = getStorage(app);
 
     const reportForm = document.getElementById('reportForm');
     const locationInput = document.getElementById('location');
     const errorDiv = document.getElementById('error');
     const progressBar = document.getElementById('uploadProgress');
+    const submitButton = document.querySelector('button[type="submit"]');
 
     let marker;
 
@@ -143,6 +142,28 @@
     });
 
     updateLocation(-1.2921, 36.8219);
+    
+    // --- New simulated upload function ---
+    function simulateFileUpload(file) {
+      return new Promise(resolve => {
+        progressBar.style.display = "block";
+        submitButton.disabled = true;
+
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += 10;
+          progressBar.value = progress;
+          if (progress >= 100) {
+            clearInterval(interval);
+            setTimeout(() => {
+              progressBar.style.display = "none";
+              submitButton.disabled = false;
+              resolve("Simulated Upload Complete");
+            }, 500); // Small delay to show completion
+          }
+        }, 200); // Progress every 200ms
+      });
+    }
 
     reportForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -162,28 +183,11 @@
       
       const caseId = generateCaseId();
       const newReportRef = ref(db, `reports/${caseId}`);
-      let fileUrl = "";
+      let fileUrl = "No file uploaded";
 
       try {
         if (evidenceFile) {
-          const storageRefPath = storageRef(storage, `reports_files/${caseId}/${evidenceFile.name}`);
-          const uploadTask = uploadBytesResumable(storageRefPath, evidenceFile);
-          
-          progressBar.style.display = "block";
-
-          await new Promise((resolve, reject) => {
-            uploadTask.on('state_changed',
-              (snapshot) => {
-                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                progressBar.value = progress;
-              },
-              reject,
-              async () => {
-                fileUrl = await getDownloadURL(uploadTask.snapshot.ref);
-                resolve();
-              }
-            );
-          });
+          fileUrl = await simulateFileUpload(evidenceFile);
         }
 
         const reportData = {
@@ -193,10 +197,11 @@
           peopleInvolved: people || "Not specified",
           location: locationName,
           dateOccurred: date,
-          evidenceFileUrl: fileUrl || "No file uploaded",
+          evidenceFileUrl: fileUrl,
           latitude: marker.getLatLng().lat,
           longitude: marker.getLatLng().lng,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          status: "pending" // Default status for new reports
         };
 
         await set(newReportRef, reportData);
@@ -207,6 +212,8 @@
       } catch (error) {
         errorDiv.textContent = "Submission failed. Please try again.";
         console.error("Submission error:", error);
+        submitButton.disabled = false;
+        progressBar.style.display = "none";
       }
     });
   </script>
